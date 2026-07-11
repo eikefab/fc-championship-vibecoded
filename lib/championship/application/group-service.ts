@@ -57,76 +57,48 @@ export async function drawGroups(
   const groupAIds = [shuffledSeeds[0], ...shuffledRemaining.slice(0, 4)]
   const groupBIds = [shuffledSeeds[1], ...shuffledRemaining.slice(4, 8)]
 
-  const roundsA = generateRoundRobin(groupAIds)
-  const roundsB = generateRoundRobin(groupBIds)
+  let groupA: { id: string } | undefined
+  let groupB: { id: string } | undefined
 
-  return await prisma.$transaction(async (tx) => {
-    const existing = await tx.group.count()
-    if (existing > 0) {
-      throw failure("STATE_CONFLICT", "Grupos já sorteados concorrentemente")
-    }
+  try {
+    const created = await prisma.$transaction(async (tx) => {
+      const existing = await tx.group.count()
+      if (existing > 0) {
+        throw failure("STATE_CONFLICT", "Grupos já sorteados concorrentemente")
+      }
 
-    const groupA = await tx.group.create({
-      data: {
-        code: "A",
-        memberships: {
-          create: groupAIds.map((id, i) => ({
-            participantId: id,
-            isSeeded: i === 0,
-          })),
+      const groupA = await tx.group.create({
+        data: {
+          code: "A",
+          memberships: {
+            create: groupAIds.map((id, i) => ({
+              participantId: id,
+              isSeeded: i === 0,
+            })),
+          },
         },
-      },
+      })
+
+      const groupB = await tx.group.create({
+        data: {
+          code: "B",
+          memberships: {
+            create: groupBIds.map((id, i) => ({
+              participantId: id,
+              isSeeded: i === 0,
+            })),
+          },
+        },
+      })
+
+      return { groupA, groupB }
     })
 
-    for (const r of roundsA) {
-      for (const m of r.matches) {
-        await tx.match.create({
-          data: {
-            type: "REGULAR_GROUP",
-            round: r.round,
-            status: "PENDING",
-            groupId: groupA.id,
-            participants: {
-              create: [
-                { participantId: m.homeParticipantId, role: "HOME" },
-                { participantId: m.awayParticipantId, role: "AWAY" },
-              ],
-            },
-          },
-        })
-      }
-    }
+    groupA = created.groupA
+    groupB = created.groupB
 
-    const groupB = await tx.group.create({
-      data: {
-        code: "B",
-        memberships: {
-          create: groupBIds.map((id, i) => ({
-            participantId: id,
-            isSeeded: i === 0,
-          })),
-        },
-      },
-    })
-
-    for (const r of roundsB) {
-      for (const m of r.matches) {
-        await tx.match.create({
-          data: {
-            type: "REGULAR_GROUP",
-            round: r.round,
-            status: "PENDING",
-            groupId: groupB.id,
-            participants: {
-              create: [
-                { participantId: m.homeParticipantId, role: "HOME" },
-                { participantId: m.awayParticipantId, role: "AWAY" },
-              ],
-            },
-          },
-        })
-      }
-    }
+    await createMatchesForGroup(groupA.id, groupAIds)
+    await createMatchesForGroup(groupB.id, groupBIds)
 
     return {
       ok: true as const,
@@ -143,6 +115,62 @@ export async function drawGroups(
         },
         matchCount: 20,
       },
+    }
+  } catch (error) {
+    const createdGroupIds = [groupA?.id, groupB?.id].filter(
+      (id): id is string => Boolean(id),
+    )
+    if (createdGroupIds.length > 0) {
+      await prisma.group
+        .deleteMany({
+          where: { id: { in: createdGroupIds } },
+        })
+        .catch(() => {
+          // Best-effort rollback: ignore cleanup errors so the original
+          // failure is preserved.
+        })
+    }
+
+    if (isFailureResult(error)) {
+      return error
+    }
+    throw error
+  }
+}
+
+async function createMatchesForGroup(
+  groupId: string,
+  participantIds: string[],
+): Promise<void> {
+  const rounds = generateRoundRobin(participantIds)
+
+  await prisma.$transaction(async (tx) => {
+    for (const round of rounds) {
+      for (const match of round.matches) {
+        const created = await tx.match.create({
+          data: {
+            type: "REGULAR_GROUP",
+            round: round.round,
+            status: "PENDING",
+            groupId,
+          },
+        })
+
+        await tx.matchParticipant.createMany({
+          data: [
+            {
+              matchId: created.id,
+              participantId: match.homeParticipantId,
+              role: "HOME",
+            },
+            {
+              matchId: created.id,
+              participantId: match.awayParticipantId,
+              role: "AWAY",
+            },
+          ],
+        })
+      }
     }
   })
 }
@@ -182,28 +210,44 @@ export async function redrawGroups(
     )
   }
 
-  return await prisma.$transaction(async (tx) => {
-    const recheck = await tx.match.findMany({
-      where: { groupId: { not: null } },
-      include: { participants: true, events: true },
+  try {
+    await prisma.$transaction(async (tx) => {
+      const recheck = await tx.match.findMany({
+        where: { groupId: { not: null } },
+        include: { participants: true, events: true },
+      })
+
+      const recheckHasData = recheck.some(
+        (m) =>
+          m.status !== "PENDING" ||
+          m.participants.some((p) => p.score !== null) ||
+          m.events.length > 0,
+      )
+
+      if (recheckHasData) {
+        throw failure(
+          "STATE_CONFLICT",
+          "Dados foram registrados concorrentemente",
+        )
+      }
+
+      await tx.group.deleteMany()
     })
 
-    const recheckHasData = recheck.some(
-      (m) =>
-        m.status !== "PENDING" ||
-        m.participants.some((p) => p.score !== null) ||
-        m.events.length > 0,
-    )
-
-    if (recheckHasData) {
-      throw failure(
-        "STATE_CONFLICT",
-        "Dados foram registrados concorrentemente",
-      )
-    }
-
-    await tx.group.deleteMany()
-
     return drawGroups(seedParticipantIds)
-  })
+  } catch (error) {
+    if (isFailureResult(error)) {
+      return error
+    }
+    throw error
+  }
+}
+
+function isFailureResult(error: unknown): error is ActionResult<never> {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    "ok" in error &&
+    error.ok === false
+  )
 }
