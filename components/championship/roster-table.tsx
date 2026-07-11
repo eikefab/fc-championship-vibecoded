@@ -6,6 +6,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
+import { Badge } from "@/components/ui/badge"
 
 type Player = {
   id: string
@@ -17,12 +18,12 @@ type Player = {
 
 export function RosterTable({ players }: { players: Player[] }) {
   return (
-    <div className="overflow-x-auto">
-      <Table>
+    <div className="-mx-4 overflow-x-auto px-4">
+      <Table className="min-w-[620px]">
         <TableHeader>
           <TableRow>
-            <TableHead className="w-12 text-center">#</TableHead>
-            <TableHead>Jogador</TableHead>
+            <TableHead className="sticky left-0 z-20 w-12 bg-card text-center">#</TableHead>
+            <TableHead className="sticky left-12 z-20 bg-card">Jogador</TableHead>
             <TableHead>Clube</TableHead>
             <TableHead>Posições</TableHead>
             <TableHead className="text-center">Geral</TableHead>
@@ -31,20 +32,20 @@ export function RosterTable({ players }: { players: Player[] }) {
         <TableBody>
           {players.map((player, i) => (
             <TableRow key={player.id}>
-              <TableCell className="text-center text-muted-foreground">
+              <TableCell className="sticky left-0 z-10 bg-card text-center font-mono text-muted-foreground">
                 {i + 1}
               </TableCell>
-              <TableCell className="font-medium">
+              <TableCell className="sticky left-12 z-10 bg-card font-semibold text-[#102a68]">
                 {player.name}
               </TableCell>
               <TableCell>{player.team}</TableCell>
               <TableCell>
-                <span className="text-xs">
-                  {player.positions.join(", ")}
-                </span>
+                <div className="flex gap-1">
+                  {player.positions.map((position) => <Badge key={position} variant="secondary" className="px-1.5 text-[9px]">{position}</Badge>)}
+                </div>
               </TableCell>
-              <TableCell className="text-center font-bold">
-                {player.overall}
+              <TableCell className="text-center">
+                <span className="inline-grid size-8 place-items-center rounded-full bg-[#102a68] font-mono text-xs font-bold text-white">{player.overall}</span>
               </TableCell>
             </TableRow>
           ))}

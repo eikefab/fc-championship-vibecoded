@@ -4,15 +4,17 @@ import { MatchCard } from "@/components/championship/match-card"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
+import { PageHeading } from "@/components/championship/page-heading"
 
 export default async function GroupsPage() {
   const groups = await getGroupsData()
 
   if (groups.length === 0) {
     return (
-      <div className="py-12 text-center">
-        <h1 className="mb-3 font-heading text-2xl font-bold">Grupos</h1>
-        <p className="text-muted-foreground">
+      <div className="surface-shadow rounded-2xl border border-dashed bg-card/70 px-6 py-16 text-center">
+        <p className="mb-2 font-heading text-xs font-bold uppercase tracking-[0.2em] text-cobalt">Fase 01</p>
+        <h1 className="mb-3 font-heading text-3xl font-bold uppercase text-[#102a68]">Grupos ainda não sorteados</h1>
+        <p className="mx-auto max-w-lg text-sm leading-6 text-muted-foreground">
           Os grupos ainda não foram sorteados. Volte ao dashboard para
           selecionar dois cabeças-de-chave.
         </p>
@@ -21,29 +23,42 @@ export default async function GroupsPage() {
   }
 
   return (
-    <div className="space-y-8">
-      {groups.map((group) => (
-        <section key={group.id}>
-          <h2 className="mb-4 font-heading text-xl font-bold">
-            Grupo {group.code}
-          </h2>
+    <div className="space-y-10">
+      <PageHeading eyebrow="Fase 01" title="Fase de grupos" description="Classificação ao vivo, rodadas e resultados de cada grupo." />
+      {groups.map((group) => {
+        const matches = group.rounds.flatMap((round) => round.matches)
+        const completed = matches.filter((match) => match.status === "COMPLETED").length
+        return <section key={group.id} className="space-y-5">
+          <div className="flex items-end justify-between border-b-2 border-[#102a68] pb-3">
+            <div>
+              <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-cobalt">Classificação e jogos</p>
+              <h2 className="font-heading text-3xl font-bold uppercase leading-none text-[#102a68]">Grupo {group.code}</h2>
+            </div>
+            <div className="text-right">
+              <strong className="font-mono text-lg text-[#102a68]">{completed}/{matches.length}</strong>
+              <p className="text-[10px] uppercase tracking-wide text-muted-foreground">partidas concluídas</p>
+            </div>
+          </div>
 
-          <Card className="mb-6">
+          <Card className="surface-shadow border-0 ring-1 ring-[#102a68]/10">
             <CardHeader className="pb-2">
-              <h3 className="font-heading text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-                Classificação
-              </h3>
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <h3 className="font-heading text-base font-bold uppercase tracking-wide text-[#102a68]">Classificação</h3>
+                <span className="flex items-center gap-1.5 text-[10px] font-medium text-muted-foreground"><span className="size-2 rounded-sm bg-qualification" /> G4 avança ao mata-mata</span>
+              </div>
             </CardHeader>
             <CardContent>
               <StandingsTable standings={group.standings} />
             </CardContent>
           </Card>
 
+          <div className="grid gap-x-6 gap-y-5 lg:grid-cols-2">
           {group.rounds.map((round) => (
-            <div key={round.round} className="mb-4">
-              <h4 className="mb-2 font-heading text-sm font-semibold text-muted-foreground">
-                Rodada {round.round}
-              </h4>
+            <div key={round.round} className="rounded-xl border border-border/80 bg-white/40 p-3">
+              <div className="mb-2.5 flex items-center justify-between">
+                <h3 className="font-heading text-base font-bold uppercase text-[#102a68]">Rodada {round.round}</h3>
+                <span className="rounded-full bg-muted px-2 py-1 text-[10px] text-muted-foreground">Folga: {round.byeParticipantName || "—"}</span>
+              </div>
               <div className="grid gap-2 sm:grid-cols-2">
                 {round.matches.map((m) => (
                   <MatchCard
@@ -59,11 +74,9 @@ export default async function GroupsPage() {
                   />
                 ))}
               </div>
-              <p className="mt-1 text-center text-xs text-muted-foreground">
-                Folga: {round.byeParticipantName || "—"}
-              </p>
             </div>
           ))}
+          </div>
 
           {group.tiebreaks.length > 0 && (
             <>
@@ -107,7 +120,7 @@ export default async function GroupsPage() {
             </>
           )}
         </section>
-      ))}
+      })}
     </div>
   )
 }

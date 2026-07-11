@@ -31,14 +31,14 @@ export function MatchCard({
   return (
     <Link
       href={`/partidas/${id}`}
-      className="block transition-opacity hover:opacity-80"
+      className="group block rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cobalt focus-visible:ring-offset-2"
     >
-      <Card className={isTiebreak ? "border-amber-200 bg-amber-50/30" : ""}>
-        <CardContent className="flex items-center justify-between px-4 py-3">
-          <div className="flex-1 text-right font-medium text-sm">
+      <Card className={`surface-shadow border-0 transition-all group-hover:-translate-y-0.5 group-hover:ring-cobalt/30 ${isTiebreak ? "bg-amber-50 ring-amber-300" : "ring-1 ring-[#102a68]/10"}`}>
+        <CardContent className="flex min-h-20 items-center justify-between px-4 py-3">
+          <div className="min-w-0 flex-1 truncate text-right text-sm font-semibold">
             {homeParticipantName}
           </div>
-          <div className="mx-3 flex flex-col items-center gap-1">
+          <div className="mx-3 flex min-w-20 flex-col items-center gap-1">
             <Scoreline
               homeScore={homeScore}
               awayScore={awayScore}
@@ -47,7 +47,7 @@ export function MatchCard({
             />
             <StatusBadge status={status} />
           </div>
-          <div className="flex-1 font-medium text-sm">
+          <div className="min-w-0 flex-1 truncate text-sm font-semibold">
             {awayParticipantName}
           </div>
         </CardContent>

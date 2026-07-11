@@ -23,12 +23,12 @@ export function StandingsTable({
   }
 
   return (
-    <div className="overflow-x-auto">
-      <Table>
+    <div className="-mx-4 overflow-x-auto px-4">
+      <Table className="min-w-[720px]">
         <TableHeader>
           <TableRow>
-            <TableHead className="w-12 text-center">#</TableHead>
-            <TableHead>Participante</TableHead>
+            <TableHead className="sticky left-0 z-20 w-12 bg-card text-center">#</TableHead>
+            <TableHead className="sticky left-12 z-20 min-w-40 bg-card">Participante</TableHead>
             <TableHead className="text-center">P</TableHead>
             <TableHead className="text-center">V</TableHead>
             <TableHead className="text-center">E</TableHead>
@@ -45,11 +45,9 @@ export function StandingsTable({
             return (
               <TableRow
                 key={entry.participantId}
-                className={
-                  isG4 ? "bg-qualification/50" : undefined
-                }
+                className={isG4 ? "bg-qualification/60 hover:bg-qualification/80" : undefined}
               >
-                <TableCell className="text-center font-mono text-sm">
+                <TableCell className={`sticky left-0 z-10 text-center font-mono text-sm ${isG4 ? "bg-[#e3ebff]" : "bg-card"}`}>
                   {entry.requiresTiebreak && (
                     <span className="mr-1" title="Empate no corte">
                       ⚡
@@ -57,18 +55,18 @@ export function StandingsTable({
                   )}
                   {entry.position}
                 </TableCell>
-                <TableCell className="font-medium">
+                <TableCell className={`sticky left-12 z-10 font-semibold ${isG4 ? "bg-[#e3ebff]" : "bg-card"}`}>
                   {entry.participantName}
                   {entry.provisional && (
                     <Badge
                       variant="outline"
-                      className="ml-2 border-live/40 text-live-foreground text-[10px]"
+                      className="ml-1.5 border-transparent bg-white/70 px-1.5 text-[9px] font-medium text-muted-foreground"
                     >
                       provisório
                     </Badge>
                   )}
                 </TableCell>
-                <TableCell className="text-center font-bold">
+                <TableCell className="text-center font-mono font-bold tabular-nums text-[#102a68]">
                   {entry.points}
                 </TableCell>
                 <TableCell className="text-center">

@@ -2,6 +2,7 @@ import { notFound } from "next/navigation"
 import { getParticipantData } from "@/lib/championship/application/queries"
 import { RosterTable } from "@/components/championship/roster-table"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
+import { PageHeading } from "@/components/championship/page-heading"
 
 export default async function ParticipantPage({
   params,
@@ -16,15 +17,13 @@ export default async function ParticipantPage({
   }
 
   return (
-    <div className="space-y-6">
-      <h1 className="font-heading text-2xl font-bold">
-        {participant.name}
-      </h1>
+    <div className="space-y-7">
+      <PageHeading eyebrow="Participante" title={participant.name} description={`${participant.players.length} jogadores inscritos no campeonato.`} />
 
-      <Card>
+      <Card className="surface-shadow border-0 ring-1 ring-[#102a68]/10">
         <CardHeader className="pb-2">
-          <h2 className="font-heading text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-            Elenco — {participant.players.length} jogadores
+          <h2 className="font-heading text-base font-bold uppercase tracking-wide text-[#102a68]">
+            Elenco oficial
           </h2>
         </CardHeader>
         <CardContent>

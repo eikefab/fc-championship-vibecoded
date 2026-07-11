@@ -82,7 +82,7 @@ export async function getDashboardData(): Promise<DashboardData> {
   const hasGroups = groups.length > 0
   const knockoutMatches = await prisma.match.findMany({
     where: { knockoutStage: { not: null } },
-    select: { knockoutStage: true },
+    select: { knockoutStage: true, status: true },
   })
 
   let phase: DashboardData["phase"] = "pre_draw"
@@ -105,19 +105,21 @@ export async function getDashboardData(): Promise<DashboardData> {
       if (tiebreaks > 0) {
         phase = "tiebreak"
       } else {
-        const quartersDone = knockoutMatches.filter((m) => m.knockoutStage === "QUARTER_FINALS").length
-        const semisDone = knockoutMatches.filter((m) => m.knockoutStage === "SEMI_FINALS").length
-        const finalDone = knockoutMatches.filter((m) => m.knockoutStage === "FINAL").length
+        const quarters = knockoutMatches.filter((m) => m.knockoutStage === "QUARTER_FINALS")
+        const semis = knockoutMatches.filter((m) => m.knockoutStage === "SEMI_FINALS")
+        const finals = knockoutMatches.filter((m) => m.knockoutStage === "FINAL")
 
-        if (quartersDone > 0 && quartersDone < 4) {
-          phase = "knockout"
-          knockoutStage = "QUARTER_FINALS"
-        } else if (quartersDone >= 4 && semisDone > 0) {
+        if (finals.length > 0) {
+          knockoutStage = "FINAL"
+          phase = finals.every((match) => match.status === "COMPLETED")
+            ? "completed"
+            : "knockout"
+        } else if (semis.length > 0) {
           phase = "knockout"
           knockoutStage = "SEMI_FINALS"
-        } else if (finalDone > 0) {
-          phase = "completed"
-          knockoutStage = "FINAL"
+        } else if (quarters.length > 0) {
+          phase = "knockout"
+          knockoutStage = "QUARTER_FINALS"
         } else {
           phase = "groups"
         }

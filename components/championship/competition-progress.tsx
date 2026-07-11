@@ -34,26 +34,26 @@ export function CompetitionProgress({
       className={className}
       {...props}
     >
-      <ol className="flex items-center gap-1">
+      <ol className="grid grid-cols-4 overflow-hidden rounded-xl border border-white/15 bg-[#0d245b]/55 p-1.5 backdrop-blur-sm">
         {stages.map((stage, i) => {
           const isActive = i <= activeIndex
           const isCurrent = i === activeIndex
           return (
-            <li key={stage.key} className="flex items-center gap-1">
+            <li key={stage.key} className="relative flex min-w-0 items-center">
               <span
-                className={`rounded-full px-3 py-1 text-xs font-semibold font-heading ${
+                aria-current={isCurrent ? "step" : undefined}
+                className={`relative z-10 flex min-h-11 w-full items-center justify-center rounded-lg px-2 font-heading text-xs font-semibold uppercase tracking-wide transition-colors sm:text-sm ${
                   isCurrent
-                    ? "bg-cobalt text-cobalt-foreground"
+                    ? "bg-white text-cobalt shadow-lg shadow-black/10"
                     : isActive
-                      ? "bg-primary/10 text-primary"
-                      : "bg-muted text-muted-foreground"
+                      ? "text-white"
+                      : "text-blue-200/70"
                 }`}
               >
+                <span className="mr-1.5 hidden font-mono text-[10px] opacity-60 sm:inline">0{i + 1}</span>
                 {stage.label}
               </span>
-              {i < stages.length - 1 && (
-                <span className="h-px w-4 bg-border" aria-hidden />
-              )}
+              {i < stages.length - 1 ? <span className="absolute -right-1 z-20 size-2 rotate-45 border-r border-t border-white/20" aria-hidden /> : null}
             </li>
           )
         })}

@@ -11,9 +11,9 @@ export function LeaderboardCard({
   emptyMessage: string
 }) {
   return (
-    <Card>
+    <Card className="surface-shadow border-0 ring-1 ring-[#102a68]/10">
       <CardHeader className="pb-2 pt-4">
-        <h3 className="font-heading text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+        <h3 className="font-heading text-base font-bold uppercase tracking-wide text-[#102a68]">
           {title}
         </h3>
       </CardHeader>
@@ -23,13 +23,14 @@ export function LeaderboardCard({
             {emptyMessage}
           </p>
         ) : (
-          <ol className="space-y-1">
-            {entries.map((entry) => (
+          <ol className="space-y-2">
+            {entries.map((entry, index) => (
               <li
                 key={entry.playerId}
-                className="flex items-center justify-between text-sm"
+                className="flex items-center justify-between gap-3 text-sm"
               >
-                <span className="flex items-center gap-1.5">
+                <span className="flex min-w-0 items-center gap-2">
+                  <span className="grid size-5 shrink-0 place-items-center rounded-full bg-muted font-mono text-[10px] font-bold text-muted-foreground">{index + 1}</span>
                   <span className="font-medium">
                     {entry.playerName}
                   </span>

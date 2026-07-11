@@ -1,11 +1,15 @@
 import "server-only"
 import prisma from "@/lib/prisma"
 import {
+  calculateStandingsWithTiebreak,
+  computeTiebreakStandings,
   createRandomSource,
+  getTiedBoundaryParticipants,
   pairKnockoutEntrants,
   validateQuartersEntrants,
   validateSemisEntrants,
 } from "@/lib/championship/domain"
+import type { MatchDto } from "@/lib/championship/domain"
 import type { ActionResult } from "./action-result"
 import { success, failure } from "./action-result"
 
@@ -15,10 +19,31 @@ export async function drawKnockoutStage(
   if (stage === "QUARTER_FINALS") {
     const groups = await prisma.group.findMany({
       include: {
+        memberships: {
+          include: { participant: { select: { name: true } } },
+        },
         matches: {
           where: { type: "REGULAR_GROUP" },
+          include: {
+            participants: {
+              include: { participant: { select: { name: true } } },
+            },
+            events: {
+              include: {
+                player: { select: { name: true, participantId: true } },
+              },
+            },
+          },
         },
-        tiebreaks: true,
+        tiebreaks: {
+          orderBy: { attempt: "desc" },
+          include: {
+            participants: true,
+            matches: {
+              include: { participants: true },
+            },
+          },
+        },
       },
     })
 
@@ -58,13 +83,111 @@ export async function drawKnockoutStage(
       )
     }
 
-    const allMemberships = await prisma.groupParticipant.findMany({
-      include: { participant: true },
-    })
+    const qualifiedIds: string[] = []
 
-    const qualifiedIds = allMemberships
-      .map((m) => m.participantId)
-      .slice(0, 8)
+    for (const group of groups) {
+      const participants = group.memberships.map((membership) => ({
+        id: membership.participantId,
+        name: membership.participant.name,
+      }))
+
+      const regularMatches: MatchDto[] = group.matches.map((match) => ({
+        id: match.id,
+        type: "REGULAR_GROUP",
+        status: match.status,
+        groupCode: group.code,
+        round: match.round,
+        knockoutStage: null,
+        completedAt: match.completedAt?.toISOString() ?? null,
+        sides: match.participants.map((side) => ({
+          participantId: side.participantId,
+          participantName: side.participant.name,
+          role: side.role,
+          score: side.score,
+          penaltyScore: side.penaltyScore,
+        })),
+        events: match.events.map((event) => ({
+          id: event.id,
+          matchId: event.matchId,
+          playerId: event.playerId,
+          playerName: event.player.name,
+          participantId: event.player.participantId,
+          eventType: event.eventType,
+        })),
+      }))
+
+      const standings = calculateStandingsWithTiebreak(
+        participants,
+        regularMatches,
+      )
+      const boundary = getTiedBoundaryParticipants(standings)
+
+      if (boundary.participants.length === 0) {
+        qualifiedIds.push(
+          ...standings.slice(0, 4).map((entry) => entry.participantId),
+        )
+        continue
+      }
+
+      const tiedIds = new Set(
+        boundary.participants.map((entry) => entry.participantId),
+      )
+      const safeQualified = standings
+        .slice(0, 4)
+        .filter((entry) => !tiedIds.has(entry.participantId))
+        .map((entry) => entry.participantId)
+
+      const resolvedTiebreak = group.tiebreaks.find(
+        (tiebreak) =>
+          tiebreak.status === "COMPLETED" &&
+          tiebreak.participants.some((entry) => tiedIds.has(entry.participantId)),
+      )
+
+      if (!resolvedTiebreak) {
+        return failure(
+          "STATE_CONFLICT",
+          `O desempate do G4 do grupo ${group.code} ainda não foi resolvido`,
+        )
+      }
+
+      const persistedResolution = resolvedTiebreak.participants
+        .filter((entry) => entry.resolvedPosition != null)
+        .sort((a, b) => a.resolvedPosition! - b.resolvedPosition!)
+
+      const resolvedQualified =
+        persistedResolution.length === resolvedTiebreak.participants.length
+          ? persistedResolution
+              .slice(0, resolvedTiebreak.slotsAtStake)
+              .map((entry) => entry.participantId)
+          : computeTiebreakStandings(
+              resolvedTiebreak.participants.map((entry) => ({
+                id: entry.participantId,
+                name: "",
+              })),
+              resolvedTiebreak.matches.map((match) => {
+                const home = match.participants.find((side) => side.role === "HOME")
+                const away = match.participants.find((side) => side.role === "AWAY")
+                return {
+                  homeParticipantId: home?.participantId ?? "",
+                  awayParticipantId: away?.participantId ?? "",
+                  homeScore: home?.score ?? 0,
+                  awayScore: away?.score ?? 0,
+                }
+              }),
+            )
+              .slice(0, resolvedTiebreak.slotsAtStake)
+              .map((entry) => entry.participantId)
+
+      const groupQualified = [...safeQualified, ...resolvedQualified]
+      if (groupQualified.length !== 4) {
+        return failure(
+          "INVARIANT_VIOLATION",
+          `Não foi possível determinar os quatro classificados do grupo ${group.code}`,
+        )
+      }
+
+      qualifiedIds.push(...groupQualified)
+    }
 
     if (qualifiedIds.length !== 8) {
       return failure(

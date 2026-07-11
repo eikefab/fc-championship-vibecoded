@@ -20,7 +20,7 @@ export function Scoreline({
   }
 
   return (
-    <span className="font-mono">
+    <span className="whitespace-nowrap font-mono tabular-nums">
       <span className="font-bold">
         {homeScore}
       </span>

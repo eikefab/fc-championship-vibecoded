@@ -48,9 +48,10 @@ function StartMatchButton({ matchId }: { matchId: string }) {
   useActionFeedback(result, "Partida iniciada")
 
   return (
-    <form action={formAction}>
+    <form action={formAction} className="rounded-xl border border-dashed bg-card p-5">
       <input type="hidden" name="matchId" value={matchId} />
-      <Button type="submit" disabled={pending}>
+      <p className="mb-3 text-sm text-muted-foreground">A partida está pronta. Inicie para liberar o placar e os eventos.</p>
+      <Button type="submit" disabled={pending} className="min-h-10 w-full bg-cobalt font-semibold">
         {pending ? <Spinner /> : null}
         Iniciar partida
       </Button>
@@ -78,18 +79,18 @@ function ScoreForm({
   useActionFeedback(completeResult, "Partida concluída")
 
   return (
-    <Card>
+    <Card className="surface-shadow border-0 ring-1 ring-[#102a68]/10">
       <CardHeader className="pb-3">
-        <h3 className="font-heading text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-          Placar
+        <h3 className="font-heading text-base font-bold uppercase tracking-wide text-[#102a68]">
+          Controle do placar
         </h3>
       </CardHeader>
       <CardContent className="space-y-4">
         <form action={scoreAction} className="space-y-4">
           <input type="hidden" name="matchId" value={matchId} />
-          <div className="flex items-center gap-4">
+          <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3">
             <div className="flex-1">
-              <label className="mb-1 block text-xs">Mandante</label>
+              <label className="mb-1 block text-xs font-medium text-muted-foreground">Mandante</label>
               <Input
                 type="number"
                 name="homeScore"
@@ -98,9 +99,9 @@ function ScoreForm({
                 required
               />
             </div>
-            <span className="pt-5 text-muted-foreground">×</span>
+            <span className="pt-5 font-heading text-lg text-muted-foreground">×</span>
             <div className="flex-1">
-              <label className="mb-1 block text-xs">Visitante</label>
+              <label className="mb-1 block text-xs font-medium text-muted-foreground">Visitante</label>
               <Input
                 type="number"
                 name="awayScore"
@@ -120,7 +121,7 @@ function ScoreForm({
           <Button
             type="submit"
             disabled={scorePending}
-            className="w-full"
+            className="min-h-10 w-full bg-cobalt font-semibold"
           >
             {scorePending ? <Spinner /> : null}
             Salvar placar
@@ -136,9 +137,9 @@ function ScoreForm({
           )}
           <Button
             type="submit"
-            variant="secondary"
+            variant="outline"
             disabled={completePending}
-            className="w-full"
+            className="min-h-10 w-full font-semibold text-[#16845b]"
           >
             {completePending ? <Spinner /> : null}
             Concluir partida
