@@ -1050,10 +1050,60 @@ const participantData: Prisma.ParticipantCreateInput[] = [
   },
 ]
 
+async function seedParticipant(
+  participant: Prisma.ParticipantCreateInput,
+) {
+  const name = participant.name
+  if (!name) throw new Error("Participant name is required")
+
+  const upsertedParticipant = await prisma.participant.upsert({
+    where: { name },
+    update: {},
+    create: { name },
+  })
+
+  const players = participant.players
+  if (!players?.create) throw new Error(`No players for participant ${name}`)
+
+  const playerList = Array.isArray(players.create) ? players.create : [players.create]
+
+  for (const player of playerList) {
+    if (typeof player === "object" && player !== null && "name" in player) {
+      const playerName = player.name
+      await prisma.player.upsert({
+        where: {
+          participantId_name: {
+            participantId: upsertedParticipant.id,
+            name: playerName,
+          },
+        },
+        update: {
+          team: player.team,
+          positions: player.positions ?? [],
+          overall: player.overall,
+        },
+        create: {
+          name: playerName,
+          team: player.team,
+          positions: player.positions ?? [],
+          overall: player.overall,
+          participantId: upsertedParticipant.id,
+        },
+      })
+    }
+  }
+}
+
 async function main() {
   for (const data of participantData) {
-    await prisma.participant.create({ data })
+    await seedParticipant(data)
   }
+
+  const participantCount = await prisma.participant.count()
+  const playerCount = await prisma.player.count()
+  console.log(
+    `Seed complete: ${participantCount} participants, ${playerCount} players`,
+  )
 }
 
 main()

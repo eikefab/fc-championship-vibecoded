@@ -16,7 +16,7 @@ Execute na ordem abaixo, salvo quando as dependências permitirem paralelismo. C
 
 | Plano                                                      | Título                                       | Prioridade | Esforço | Depende de | Status |
 | ---------------------------------------------------------- | -------------------------------------------- | ---------- | ------- | ---------- | ------ |
-| [001](001-evolve-prisma-domain-model.md)                   | Evoluir Prisma e seed                        | P1         | L       | —          | TODO   |
+| [001](001-evolve-prisma-domain-model.md)                   | Evoluir Prisma e seed                        | P1         | L       | —          | DONE   |
 | [002](002-build-pure-competition-engine.md)                | Construir motor esportivo puro               | P1         | L       | 001        | TODO   |
 | [003](003-implement-transactional-application-services.md) | Implementar serviços e actions transacionais | P1         | L       | 001, 002   | TODO   |
 | [004](004-build-shadcn-read-experience.md)                 | Construir experiência de consulta shadcn     | P2         | L       | 003        | TODO   |

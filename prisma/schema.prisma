@@ -7,12 +7,55 @@ datasource db {
   provider = "postgresql"
 }
 
-// Add the application's domain models here as the championship data model is defined.
+enum GroupCode {
+  A
+  B
+}
+
+enum MatchType {
+  REGULAR_GROUP
+  GROUP_TIEBREAK
+  KNOCKOUT
+}
+
+enum MatchStatus {
+  PENDING
+  ONGOING
+  COMPLETED
+}
+
+enum MatchKnockoutStage {
+  QUARTER_FINALS
+  SEMI_FINALS
+  FINAL
+}
+
+enum MatchParticipantRole {
+  HOME
+  AWAY
+}
+
+enum MatchEventType {
+  GOAL
+  ASSIST
+  YELLOW_CARD
+  RED_CARD
+}
+
+enum TiebreakStatus {
+  PENDING
+  ONGOING
+  COMPLETED
+}
+
 model Participant {
-  id      String             @id @default(nanoid(8))
-  name    String
+  id      String   @id @default(nanoid(8))
+  name    String   @unique
   players Player[]
-  matches MatchParticipant[]
+
+  matches              MatchParticipant[]
+  groupMemberships     GroupParticipant[]
+  tiebreakMemberships  GroupTiebreakParticipant[]
 }
 
 model Player {
@@ -26,29 +69,98 @@ model Player {
   participant   Participant @relation(fields: [participantId], references: [id])
 
   events MatchEvent[]
+
+  @@unique([participantId, name])
+}
+
+model Group {
+  id        String    @id @default(nanoid(8))
+  code      GroupCode @unique
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  memberships GroupParticipant[]
+  matches     Match[]
+  tiebreaks   GroupTiebreak[]
+}
+
+model GroupParticipant {
+  id            String  @id @default(nanoid(8))
+  groupId       String
+  participantId String  @unique
+  isSeeded      Boolean @default(false)
+
+  group       Group       @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  participant Participant @relation(fields: [participantId], references: [id])
+
+  @@unique([groupId, participantId])
+}
+
+model GroupTiebreak {
+  id           String         @id @default(nanoid(8))
+  groupId      String
+  attempt      Int
+  slotsAtStake Int
+  status       TiebreakStatus @default(PENDING)
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+
+  group        Group                    @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  participants GroupTiebreakParticipant[]
+  matches      Match[]
+
+  @@unique([groupId, attempt])
+}
+
+model GroupTiebreakParticipant {
+  id               String @id @default(nanoid(8))
+  groupTiebreakId  String
+  participantId    String
+  resolvedPosition Int?
+
+  groupTiebreak GroupTiebreak @relation(fields: [groupTiebreakId], references: [id], onDelete: Cascade)
+  participant   Participant   @relation(fields: [participantId], references: [id])
+
+  @@unique([groupTiebreakId, participantId])
 }
 
 model Match {
-  id            String              @id @default(nanoid(8))
-  type          MatchType
-  knockoutStage MatchKnockoutStage?
-  status        MatchStatus
-  startTime     DateTime?
-  endTime       DateTime?
+  id             String              @id @default(nanoid(8))
+  type           MatchType
+  status         MatchStatus         @default(PENDING)
+  knockoutStage  MatchKnockoutStage?
+  round          Int?
+  groupId        String?
+  groupTiebreakId String?
+  completedAt    DateTime?
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @updatedAt
+
+  group        Group?         @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  groupTiebreak GroupTiebreak? @relation(fields: [groupTiebreakId], references: [id], onDelete: Cascade)
 
   participants MatchParticipant[]
   events       MatchEvent[]
+
+  @@index([type, status])
+  @@index([groupId, round])
+  @@index([knockoutStage, status])
 }
 
 model MatchParticipant {
   id            String               @id @default(nanoid(8))
   matchId       String
-  role          MatchParticipantRole
   participantId String
+  role          MatchParticipantRole
   score         Int?
+  penaltyScore  Int?
 
-  match       Match       @relation(fields: [matchId], references: [id])
+  match       Match       @relation(fields: [matchId], references: [id], onDelete: Cascade)
   participant Participant @relation(fields: [participantId], references: [id])
+
+  @@unique([matchId, participantId])
+  @@unique([matchId, role])
+  @@index([participantId])
 }
 
 model MatchEvent {
@@ -57,36 +169,9 @@ model MatchEvent {
   playerId  String
   eventType MatchEventType
 
-  match  Match  @relation(fields: [matchId], references: [id])
+  match  Match  @relation(fields: [matchId], references: [id], onDelete: Cascade)
   player Player @relation(fields: [playerId], references: [id])
-}
 
-enum MatchKnockoutStage {
-  ROUND_OF_16
-  QUARTER_FINALS
-  SEMI_FINALS
-  FINAL
-}
-
-enum MatchEventType {
-  GOAL
-  ASSIST
-  YELLOW_CARD
-  RED_CARD
-}
-
-enum MatchParticipantRole {
-  HOME
-  AWAY
-}
-
-enum MatchType {
-  GROUP
-  KNOCKOUT
-}
-
-enum MatchStatus {
-  SCHEDULED
-  ONGOING
-  COMPLETED
+  @@index([matchId, eventType])
+  @@index([playerId])
 }
