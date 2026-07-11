@@ -1,19 +1,122 @@
-import { Button } from "@/components/ui/button"
+import { getDashboardData } from "@/lib/championship/application/queries"
+import { CompetitionProgress } from "@/components/championship/competition-progress"
+import { LeaderboardCard } from "@/components/championship/leaderboard-card"
+import { MatchCard } from "@/components/championship/match-card"
+import { Card, CardContent, CardHeader } from "@/components/ui/card"
+import { Alert, AlertDescription } from "@/components/ui/alert"
+import { Separator } from "@/components/ui/separator"
 
-export default function Page() {
+export default async function HomePage() {
+  const data = await getDashboardData()
+
   return (
-    <div className="flex min-h-svh p-6">
-      <div className="flex max-w-md min-w-0 flex-col gap-4 text-sm leading-loose">
-        <div>
-          <h1 className="font-medium">Project ready!</h1>
-          <p>You may now add components and start building.</p>
-          <p>We&apos;ve already added the button component for you.</p>
-          <Button className="mt-2">Button</Button>
+    <div className="space-y-6">
+      <CompetitionProgress phase={data.phase} />
+
+      {data.phase === "pre_draw" && (
+        <Alert>
+          <AlertDescription>
+            Nenhum grupo sorteado ainda. Selecione dois cabeças-de-chave para
+            sortear os grupos.
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {data.groups && (
+        <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+          <Card>
+            <CardHeader className="pb-1 pt-4">
+              <span className="text-xs text-muted-foreground">Pendentes</span>
+            </CardHeader>
+            <CardContent>
+              <span className="font-mono text-2xl font-bold">
+                {data.pendingMatches}
+              </span>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="pb-1 pt-4">
+              <span className="text-xs text-muted-foreground">Em andamento</span>
+            </CardHeader>
+            <CardContent>
+              <span className="font-mono text-2xl font-bold text-live">
+                {data.ongoingMatches}
+              </span>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="pb-1 pt-4">
+              <span className="text-xs text-muted-foreground">Concluídas</span>
+            </CardHeader>
+            <CardContent>
+              <span className="font-mono text-2xl font-bold">
+                {data.completedMatches}
+              </span>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="pb-1 pt-4">
+              <span className="text-xs text-muted-foreground">Grupos</span>
+            </CardHeader>
+            <CardContent>
+              <span className="font-mono text-2xl font-bold">
+                {data.groupCount}
+              </span>
+            </CardContent>
+          </Card>
         </div>
-        <div className="font-mono text-xs text-muted-foreground">
-          (Press <kbd>d</kbd> to toggle dark mode)
+      )}
+
+      {data.recentResults.length > 0 && (
+        <section>
+          <h2 className="mb-3 font-heading text-lg font-semibold">
+            Resultados recentes
+          </h2>
+          <div className="grid gap-2 sm:grid-cols-2">
+            {data.recentResults.slice(0, 4).map((r) => (
+              <MatchCard
+                key={r.id}
+                id={r.id}
+                status={r.status}
+                homeParticipantName={r.homeName}
+                awayParticipantName={r.awayName}
+                homeParticipantId=""
+                awayParticipantId=""
+                homeScore={r.homeScore}
+                awayScore={r.awayScore}
+              />
+            ))}
+          </div>
+        </section>
+      )}
+
+      <Separator />
+
+      <section>
+        <h2 className="mb-3 font-heading text-lg font-semibold">Rankings</h2>
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <LeaderboardCard
+            title="Gols"
+            entries={data.leaderboards.goals}
+            emptyMessage="Nenhum gol registrado."
+          />
+          <LeaderboardCard
+            title="Assistências"
+            entries={data.leaderboards.assists}
+            emptyMessage="Nenhuma assistência registrada."
+          />
+          <LeaderboardCard
+            title="Amarelos"
+            entries={data.leaderboards.yellowCards}
+            emptyMessage="Nenhum cartão amarelo."
+          />
+          <LeaderboardCard
+            title="Vermelhos"
+            entries={data.leaderboards.redCards}
+            emptyMessage="Nenhum cartão vermelho."
+          />
         </div>
-      </div>
+      </section>
     </div>
   )
 }
