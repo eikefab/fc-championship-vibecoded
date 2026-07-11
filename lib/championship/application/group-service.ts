@@ -75,29 +75,27 @@ export async function drawGroups(
             isSeeded: i === 0,
           })),
         },
-        matches: {
-          create: roundsA.flatMap((r) =>
-            r.matches.map((m) => ({
-              type: "REGULAR_GROUP" as const,
-              round: r.round,
-              status: "PENDING" as const,
-              participants: {
-                create: [
-                  {
-                    participantId: m.homeParticipantId,
-                    role: "HOME" as const,
-                  },
-                  {
-                    participantId: m.awayParticipantId,
-                    role: "AWAY" as const,
-                  },
-                ],
-              },
-            })),
-          ),
-        },
       },
     })
+
+    for (const r of roundsA) {
+      for (const m of r.matches) {
+        await tx.match.create({
+          data: {
+            type: "REGULAR_GROUP",
+            round: r.round,
+            status: "PENDING",
+            groupId: groupA.id,
+            participants: {
+              create: [
+                { participantId: m.homeParticipantId, role: "HOME" },
+                { participantId: m.awayParticipantId, role: "AWAY" },
+              ],
+            },
+          },
+        })
+      }
+    }
 
     const groupB = await tx.group.create({
       data: {
@@ -108,29 +106,27 @@ export async function drawGroups(
             isSeeded: i === 0,
           })),
         },
-        matches: {
-          create: roundsB.flatMap((r) =>
-            r.matches.map((m) => ({
-              type: "REGULAR_GROUP" as const,
-              round: r.round,
-              status: "PENDING" as const,
-              participants: {
-                create: [
-                  {
-                    participantId: m.homeParticipantId,
-                    role: "HOME" as const,
-                  },
-                  {
-                    participantId: m.awayParticipantId,
-                    role: "AWAY" as const,
-                  },
-                ],
-              },
-            })),
-          ),
-        },
       },
     })
+
+    for (const r of roundsB) {
+      for (const m of r.matches) {
+        await tx.match.create({
+          data: {
+            type: "REGULAR_GROUP",
+            round: r.round,
+            status: "PENDING",
+            groupId: groupB.id,
+            participants: {
+              create: [
+                { participantId: m.homeParticipantId, role: "HOME" },
+                { participantId: m.awayParticipantId, role: "AWAY" },
+              ],
+            },
+          },
+        })
+      }
+    }
 
     return {
       ok: true as const,
