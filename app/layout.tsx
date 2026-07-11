@@ -1,5 +1,6 @@
 import type { Metadata } from "next"
 import { TooltipProvider } from "@/components/ui/tooltip"
+import { Toaster } from "@/components/ui/sonner"
 import { AppShell } from "@/components/app-shell"
 import "./globals.css"
 
@@ -19,6 +20,7 @@ export default function RootLayout({
       <body>
         <TooltipProvider>
           <AppShell>{children}</AppShell>
+          <Toaster position="top-right" richColors />
         </TooltipProvider>
       </body>
     </html>

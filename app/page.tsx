@@ -1,25 +1,27 @@
 import { getDashboardData } from "@/lib/championship/application/queries"
+import prisma from "@/lib/prisma"
 import { CompetitionProgress } from "@/components/championship/competition-progress"
+import { GroupDrawForm } from "@/components/championship/group-draw-form"
 import { LeaderboardCard } from "@/components/championship/leaderboard-card"
 import { MatchCard } from "@/components/championship/match-card"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
-import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Separator } from "@/components/ui/separator"
 
 export default async function HomePage() {
   const data = await getDashboardData()
+
+  const participants = data.phase === "pre_draw"
+    ? await prisma.participant.findMany({
+        select: { id: true, name: true },
+      })
+    : []
 
   return (
     <div className="space-y-6">
       <CompetitionProgress phase={data.phase} />
 
       {data.phase === "pre_draw" && (
-        <Alert>
-          <AlertDescription>
-            Nenhum grupo sorteado ainda. Selecione dois cabeças-de-chave para
-            sortear os grupos.
-          </AlertDescription>
-        </Alert>
+        <GroupDrawForm participants={participants} />
       )}
 
       {data.groups && (

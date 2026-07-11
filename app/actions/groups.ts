@@ -11,7 +11,7 @@ const drawSchema = z.object({
 })
 
 export async function drawGroupsAction(
-  _prev: ActionResult | null,
+  _prev: ActionResult<unknown> | null,
   formData: FormData,
 ): Promise<ActionResult<unknown>> {
   const parsed = drawSchema.safeParse({
@@ -41,7 +41,7 @@ export async function drawGroupsAction(
 }
 
 export async function redrawGroupsAction(
-  _prev: ActionResult | null,
+  _prev: ActionResult<unknown> | null,
   formData: FormData,
 ): Promise<ActionResult<unknown>> {
   const parsed = z

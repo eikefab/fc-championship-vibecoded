@@ -20,7 +20,7 @@ Execute na ordem abaixo, salvo quando as dependências permitirem paralelismo. C
 | [002](002-build-pure-competition-engine.md)                | Construir motor esportivo puro               | P1         | L       | 001        | DONE   |
 | [003](003-implement-transactional-application-services.md) | Implementar serviços e actions transacionais | P1         | L       | 001, 002   | DONE   |
 | [004](004-build-shadcn-read-experience.md)                 | Construir experiência de consulta shadcn     | P2         | L       | 003        | DONE   |
-| [005](005-connect-shadcn-operations-and-knockout.md)       | Conectar operações e mata-mata shadcn        | P2         | L       | 003, 004   | TODO   |
+| [005](005-connect-shadcn-operations-and-knockout.md)       | Conectar operações e mata-mata shadcn        | P2         | L       | 003, 004   | DONE   |
 
 Valores: `TODO`, `IN PROGRESS`, `DONE`, `BLOCKED — <motivo>`, `REJECTED — <motivo>`.
 

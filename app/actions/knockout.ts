@@ -9,7 +9,7 @@ import {
 import type { ActionResult } from "@/lib/championship/application/action-result"
 
 export async function drawKnockoutAction(
-  _prev: ActionResult | null,
+  _prev: ActionResult<unknown> | null,
   formData: FormData,
 ): Promise<ActionResult<unknown>> {
   const parsed = z
@@ -34,7 +34,7 @@ export async function drawKnockoutAction(
 }
 
 export async function redrawKnockoutAction(
-  _prev: ActionResult | null,
+  _prev: ActionResult<unknown> | null,
   formData: FormData,
 ): Promise<ActionResult<unknown>> {
   const parsed = z

@@ -14,7 +14,7 @@ import { createGroupTiebreak } from "@/lib/championship/application/tiebreak-ser
 import type { ActionResult } from "@/lib/championship/application/action-result"
 
 export async function startMatchAction(
-  _prev: ActionResult | null,
+  _prev: ActionResult<unknown> | null,
   formData: FormData,
 ): Promise<ActionResult<unknown>> {
   const parsed = z
@@ -40,7 +40,7 @@ export async function startMatchAction(
 }
 
 export async function updateScoreAction(
-  _prev: ActionResult | null,
+  _prev: ActionResult<unknown> | null,
   formData: FormData,
 ): Promise<ActionResult<unknown>> {
   const parsed = z
@@ -82,7 +82,7 @@ export async function updateScoreAction(
 }
 
 export async function completeMatchAction(
-  _prev: ActionResult | null,
+  _prev: ActionResult<unknown> | null,
   formData: FormData,
 ): Promise<ActionResult<unknown>> {
   const parsed = z
@@ -109,7 +109,7 @@ export async function completeMatchAction(
 }
 
 export async function addEventAction(
-  _prev: ActionResult | null,
+  _prev: ActionResult<unknown> | null,
   formData: FormData,
 ): Promise<ActionResult<unknown>> {
   const parsed = z
@@ -150,7 +150,7 @@ export async function addEventAction(
 }
 
 export async function removeEventAction(
-  _prev: ActionResult | null,
+  _prev: ActionResult<unknown> | null,
   formData: FormData,
 ): Promise<ActionResult<unknown>> {
   const parsed = z
@@ -181,7 +181,7 @@ export async function removeEventAction(
 }
 
 export async function correctMatchAction(
-  _prev: ActionResult | null,
+  _prev: ActionResult<unknown> | null,
   formData: FormData,
 ): Promise<ActionResult<unknown>> {
   const parsed = z
@@ -231,7 +231,7 @@ export async function correctMatchAction(
 }
 
 export async function createTiebreakAction(
-  _prev: ActionResult | null,
+  _prev: ActionResult<unknown> | null,
   formData: FormData,
 ): Promise<ActionResult<unknown>> {
   const parsed = z
