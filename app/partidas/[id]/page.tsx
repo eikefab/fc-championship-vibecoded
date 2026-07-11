@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic"
+
 import { notFound } from "next/navigation"
 import { getMatchData } from "@/lib/championship/application/queries"
 import prisma from "@/lib/prisma"

@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic"
+
 import { getDashboardData } from "@/lib/championship/application/queries"
 import prisma from "@/lib/prisma"
 import { CompetitionProgress } from "@/components/championship/competition-progress"

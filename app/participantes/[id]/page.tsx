@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic"
+
 import { notFound } from "next/navigation"
 import { getParticipantData } from "@/lib/championship/application/queries"
 import { RosterTable } from "@/components/championship/roster-table"

@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic"
+
 import { getGroupsData } from "@/lib/championship/application/queries"
 import { StandingsTable } from "@/components/championship/standings-table"
 import { MatchCard } from "@/components/championship/match-card"

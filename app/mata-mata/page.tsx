@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic"
+
 import { getKnockoutData } from "@/lib/championship/application/queries"
 import { KnockoutBracket } from "@/components/championship/knockout-bracket"
 import { Alert, AlertDescription } from "@/components/ui/alert"
