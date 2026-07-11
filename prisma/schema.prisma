@@ -29,11 +29,12 @@ model Player {
 }
 
 model Match {
-  id        String      @id @default(nanoid(8))
-  type      MatchType
-  status    MatchStatus
-  startTime DateTime?
-  endTime   DateTime?
+  id            String              @id @default(nanoid(8))
+  type          MatchType
+  knockoutStage MatchKnockoutStage?
+  status        MatchStatus
+  startTime     DateTime
+  endTime       DateTime?
 
   participants MatchParticipant[]
   events       MatchEvent[]
@@ -59,6 +60,13 @@ model MatchEvent {
 
   match  Match  @relation(fields: [matchId], references: [id])
   player Player @relation(fields: [playerId], references: [id])
+}
+
+enum MatchKnockoutStage {
+  ROUND_OF_16
+  QUARTER_FINALS
+  SEMI_FINALS
+  FINAL
 }
 
 enum MatchEventType {
