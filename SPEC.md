@@ -306,10 +306,11 @@ A tabela exibe, nesta ordem:
 7. derrotas;
 8. gols marcados;
 9. gols sofridos;
-10. cartões amarelos;
-11. cartões vermelhos.
+10. saldo de gols;
+11. cartões amarelos;
+12. cartões vermelhos.
 
-O saldo de gols é usado como critério, mas não é exibido como coluna.
+O saldo de gols é exibido imediatamente após os gols sofridos.
 
 ### 7.4 Ordem de classificação
 
@@ -534,7 +535,7 @@ Todos os contratos de mutação devem devolver erros de domínio tipados ou disc
 ### Classificação e desempate
 
 - [ ] Aplicam-se pontos, vitórias, saldo de gols e gols marcados exatamente nessa ordem.
-- [ ] Saldo de gols interfere na ordem, mas não aparece como coluna.
+- [ ] Saldo de gols interfere na ordem e aparece imediatamente após os gols sofridos.
 - [ ] Partidas em andamento entram provisoriamente; partidas pendentes não entram.
 - [ ] Classificação matematicamente garantida recebe destaque verde e posição exata garantida recebe destaque dourado.
 - [ ] Empate absoluto fora do corte compartilha posição e não cria partida extra.
@@ -553,7 +554,7 @@ Todos os contratos de mutação devem devolver erros de domínio tipados ou disc
 ### Interface e rankings
 
 - [ ] As quatro primeiras linhas de cada grupo têm fundo azul-claro legível.
-- [ ] A tabela mostra todas as onze colunas especificadas e não mostra saldo de gols.
+- [ ] A tabela mostra todas as doze colunas especificadas, com saldo de gols após gols sofridos.
 - [ ] Os quatro rankings exibem no máximo cinco jogadores, incluem todo o torneio e desempataram visualmente por nome.
 - [ ] O elenco exibe jogador, clube real, posições e overall.
 - [ ] A chave apresenta somente fases já criadas e usa rolagem horizontal no celular.

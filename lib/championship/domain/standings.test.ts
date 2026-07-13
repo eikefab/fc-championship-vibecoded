@@ -156,6 +156,8 @@ test("renders played matches after points and a live badge beside the participan
   )
 
   assert.ok(markup.indexOf(">P</th>") < markup.indexOf(">J</th>"))
+  assert.ok(markup.indexOf(">GC</th>") < markup.indexOf(">SG</th>"))
+  assert.ok(markup.indexOf(">SG</th>") < markup.indexOf(">CA</th>"))
   assert.match(markup, /Alfa.*AO VIVO/)
 })
 

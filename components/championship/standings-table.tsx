@@ -24,7 +24,7 @@ export function StandingsTable({
 
   return (
     <div className="-mx-4 overflow-x-auto px-4">
-      <Table className="min-w-[720px]">
+      <Table className="min-w-[760px]">
         <TableHeader>
           <TableRow>
             <TableHead className="sticky left-0 z-20 w-12 bg-card text-center">
@@ -40,6 +40,7 @@ export function StandingsTable({
             <TableHead className="text-center">D</TableHead>
             <TableHead className="text-center">GP</TableHead>
             <TableHead className="text-center">GC</TableHead>
+            <TableHead className="text-center">SG</TableHead>
             <TableHead className="text-center">CA</TableHead>
             <TableHead className="text-center">CV</TableHead>
           </TableRow>
@@ -107,6 +108,9 @@ export function StandingsTable({
                 </TableCell>
                 <TableCell className="text-center">
                   {entry.goalsConceded}
+                </TableCell>
+                <TableCell className="text-center">
+                  {entry.goalDifference}
                 </TableCell>
                 <TableCell className="text-center">
                   {entry.yellowCards}
