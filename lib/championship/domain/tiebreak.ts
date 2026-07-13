@@ -8,9 +8,7 @@ import type {
 } from "./types"
 import type { ParticipantDto } from "./types"
 
-export function planTiebreak(
-  standings: StandingEntryDto[],
-): TiebreakDecision {
+export function planTiebreak(standings: StandingEntryDto[]): TiebreakDecision {
   if (standings.length < 5) {
     return { kind: "none" }
   }
@@ -21,8 +19,8 @@ export function planTiebreak(
   if (
     fourth.points !== fifth.points ||
     fourth.wins !== fifth.wins ||
-    fourth.goalsScored !== fifth.goalsScored ||
-    fourth.goalsConceded !== fifth.goalsConceded
+    fourth.goalDifference !== fifth.goalDifference ||
+    fourth.goalsScored !== fifth.goalsScored
   ) {
     return { kind: "none" }
   }
@@ -31,8 +29,8 @@ export function planTiebreak(
     (s) =>
       s.points === fourth.points &&
       s.wins === fourth.wins &&
-      s.goalsScored === fourth.goalsScored &&
-      s.goalsConceded === fourth.goalsConceded,
+      s.goalDifference === fourth.goalDifference &&
+      s.goalsScored === fourth.goalsScored
   )
 
   if (tied.length === 0) {
@@ -60,7 +58,7 @@ export function planTiebreak(
     r.matches.map((m) => [
       participants.find((p) => p.id === m.homeParticipantId)!,
       participants.find((p) => p.id === m.awayParticipantId)!,
-    ]),
+    ])
   )
 
   return {
@@ -73,12 +71,12 @@ export function planTiebreak(
 
 export function resolveTiebreak(
   decision: TiebreakDecision,
-  tiebreakStandings: TiebreakStandingEntryDto[],
+  tiebreakStandings: TiebreakStandingEntryDto[]
 ): TiebreakResolutionDto {
   if (decision.kind === "none") {
     throw new DomainInvariantError(
       "NO_TIEBREAK_NEEDED",
-      "Cannot resolve a tiebreak when none is needed",
+      "Cannot resolve a tiebreak when none is needed"
     )
   }
 
@@ -87,7 +85,7 @@ export function resolveTiebreak(
 
     if (allResolved) {
       const sorted = [...tiebreakStandings].sort(
-        (a, b) => a.position - b.position,
+        (a, b) => a.position - b.position
       )
 
       const qualifiedIds = sorted
@@ -108,9 +106,7 @@ export function resolveTiebreak(
     }
   }
 
-  const sorted = [...tiebreakStandings].sort(
-    (a, b) => a.position - b.position,
-  )
+  const sorted = [...tiebreakStandings].sort((a, b) => a.position - b.position)
 
   let qualifiedIds: string[] = []
   let remainingTied: ParticipantDto[] = []
@@ -128,15 +124,17 @@ export function resolveTiebreak(
       lastQualified &&
       lastQualified.points === firstEliminated.points &&
       lastQualified.wins === firstEliminated.wins &&
-      lastQualified.goalsScored === firstEliminated.goalsScored &&
-      lastQualified.goalsConceded === firstEliminated.goalsConceded
+      lastQualified.goalsScored - lastQualified.goalsConceded ===
+        firstEliminated.goalsScored - firstEliminated.goalsConceded &&
+      lastQualified.goalsScored === firstEliminated.goalsScored
     ) {
       const stillTied = tiebreakStandings.filter(
         (s) =>
           s.points === lastQualified.points &&
           s.wins === lastQualified.wins &&
-          s.goalsScored === lastQualified.goalsScored &&
-          s.goalsConceded === lastQualified.goalsConceded,
+          s.goalsScored - s.goalsConceded ===
+            lastQualified.goalsScored - lastQualified.goalsConceded &&
+          s.goalsScored === lastQualified.goalsScored
       )
 
       if (stillTied.length >= 2) {
@@ -145,22 +143,19 @@ export function resolveTiebreak(
           name: s.participantName,
         }))
         qualifiedIds = qualifiedIds.filter(
-          (id) => !remainingTied.some((rt) => rt.id === id),
+          (id) => !remainingTied.some((rt) => rt.id === id)
         )
       }
     }
   }
 
-  const stillNeeded =
-    decision.slotsAtStake - qualifiedIds.length
+  const stillNeeded = decision.slotsAtStake - qualifiedIds.length
 
   if (stillNeeded > 0 && remainingTied.length === 0) {
     const nonQualified = decision.participants.filter(
-      (p) => !qualifiedIds.includes(p.id),
+      (p) => !qualifiedIds.includes(p.id)
     )
-    qualifiedIds.push(
-      ...nonQualified.slice(0, stillNeeded).map((p) => p.id),
-    )
+    qualifiedIds.push(...nonQualified.slice(0, stillNeeded).map((p) => p.id))
   }
 
   return {
@@ -177,7 +172,7 @@ export function computeTiebreakStandings(
     awayParticipantId: string
     homeScore: number
     awayScore: number
-  }[],
+  }[]
 ): TiebreakStandingEntryDto[] {
   const statsMap = new Map<string, TiebreakStandingEntryDto>()
 
@@ -223,59 +218,17 @@ export function computeTiebreakStandings(
 
   const sorted = [...statsMap.values()].sort((a, b) => {
     if (b.points !== a.points) return b.points - a.points
-
-    const h2hA = {
-      points: 0,
-      wins: 0,
-      goalsScored: 0,
-      goalsConceded: 0,
-    }
-    const h2hB = { ...h2hA }
-
-    const h2hMatch = matchResults.find(
-      (m) =>
-        (m.homeParticipantId === a.participantId &&
-          m.awayParticipantId === b.participantId) ||
-        (m.homeParticipantId === b.participantId &&
-          m.awayParticipantId === a.participantId),
-    )
-
-    if (h2hMatch) {
-      const aIsHome = h2hMatch.homeParticipantId === a.participantId
-      const aScore = aIsHome ? h2hMatch.homeScore : h2hMatch.awayScore
-      const bScore = aIsHome ? h2hMatch.awayScore : h2hMatch.homeScore
-
-      h2hA.goalsScored = aScore
-      h2hA.goalsConceded = bScore
-      h2hB.goalsScored = bScore
-      h2hB.goalsConceded = aScore
-
-      if (aScore > bScore) {
-        h2hA.wins++
-        h2hA.points += 3
-      } else if (bScore > aScore) {
-        h2hB.wins++
-        h2hB.points += 3
-      } else {
-        h2hA.points += 1
-        h2hB.points += 1
-      }
-    }
-
-    if (h2hB.points !== h2hA.points) return h2hB.points - h2hA.points
-    if (h2hB.wins !== h2hA.wins) return h2hB.wins - h2hA.wins
-    if (h2hB.goalsScored !== h2hA.goalsScored)
-      return h2hB.goalsScored - h2hA.goalsScored
-    if (h2hA.goalsConceded !== h2hB.goalsConceded)
-      return h2hA.goalsConceded - h2hB.goalsConceded
-
     if (b.wins !== a.wins) return b.wins - a.wins
-    if (b.goalsScored !== a.goalsScored)
-      return b.goalsScored - a.goalsScored
-    if (a.goalsConceded !== b.goalsConceded)
-      return a.goalsConceded - b.goalsConceded
 
-    return 0
+    const aGoalDifference = a.goalsScored - a.goalsConceded
+    const bGoalDifference = b.goalsScored - b.goalsConceded
+    if (bGoalDifference !== aGoalDifference) {
+      return bGoalDifference - aGoalDifference
+    }
+
+    if (b.goalsScored !== a.goalsScored) return b.goalsScored - a.goalsScored
+
+    return a.participantName.localeCompare(b.participantName, "pt-BR")
   })
 
   return sorted.map((s, i) => ({ ...s, position: i + 1 }))

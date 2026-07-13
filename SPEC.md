@@ -300,34 +300,25 @@ A tabela exibe, nesta ordem:
 1. posição;
 2. participante;
 3. pontos;
-4. vitórias;
-5. empates;
-6. derrotas;
-7. gols marcados;
-8. gols sofridos;
-9. cartões amarelos;
-10. cartões vermelhos.
+4. partidas jogadas;
+5. vitórias;
+6. empates;
+7. derrotas;
+8. gols marcados;
+9. gols sofridos;
+10. cartões amarelos;
+11. cartões vermelhos.
 
-Não exibir saldo de gols como coluna ou usá-lo como critério.
+O saldo de gols é usado como critério, mas não é exibido como coluna.
 
 ### 7.4 Ordem de classificação
 
 Aplicar os critérios na seguinte ordem:
 
 1. maior pontuação global;
-2. confronto direto entre os participantes ainda empatados;
-3. maior quantidade global de vitórias;
-4. maior quantidade global de gols marcados;
-5. menor quantidade global de gols sofridos.
-
-No confronto direto, construir uma mini-tabela usando somente as partidas regulares disputadas entre os participantes empatados e comparar, nessa ordem:
-
-1. pontos na mini-tabela;
-2. vitórias na mini-tabela;
-3. gols marcados na mini-tabela;
-4. menos gols sofridos na mini-tabela.
-
-Se a mini-tabela não separar todos, os ainda empatados seguem para os critérios globais 3 a 5; não se reaplica recursivamente uma nova mini-tabela para subconjuntos.
+2. maior quantidade global de vitórias;
+3. maior saldo de gols global;
+4. maior quantidade global de gols marcados.
 
 Uma igualdade absoluta que não atravesse o corte entre quarto e quinto não cria desempate. Os participantes compartilham a mesma posição esportiva e são exibidos em ordem alfabética apenas para estabilidade visual. Como o mata-mata é sorteado livremente, a ordem interna dos quatro classificados não produz vantagem.
 
@@ -336,13 +327,20 @@ Uma igualdade absoluta que não atravesse o corte entre quarto e quinto não cri
 Um desempate é obrigatório somente quando, depois de todos os critérios, participantes permanecem indistinguíveis e essa igualdade deixa incerto quem ocupa uma ou mais vagas entre os quatro classificados.
 
 - Exatamente dois envolvidos: criar uma partida decisiva; empate normal vai aos pênaltis.
-- Três ou mais envolvidos: criar turno único entre todos os envolvidos, com pontuação 3/1/0 e os mesmos critérios de mini-tabela.
+- Três ou mais envolvidos: criar turno único entre todos os envolvidos, com pontuação 3/1/0 e os mesmos critérios de classificação.
 - Se a fronteira continuar indefinida, criar nova tentativa apenas entre os participantes que continuam empatados.
 - Repetir o procedimento; quando restarem exatamente dois, usar partida decisiva com pênaltis.
 
 Se uma igualdade envolver, por exemplo, terceiro, quarto e quinto lugares, `slotsAtStake` será 2 e o desempate deve determinar quais dois avançam.
 
 Na tabela regular, o resultado do desempate aparece como indicação de classificação resolvida, sem incorporar seus números às colunas regulares.
+
+### 7.6 Garantias visuais
+
+- enquanto houver partidas abertas, todas as combinações restantes de vitória, empate e derrota são consideradas de forma conservadora;
+- participante que não pode mais terminar em quinto recebe destaque verde;
+- participante cuja colocação exata não pode mais mudar recebe destaque dourado, com precedência sobre o verde;
+- empates ainda resolvíveis por saldo de gols ou gols marcados não produzem garantia antecipada.
 
 ## 8. Rankings individuais
 
@@ -535,10 +533,10 @@ Todos os contratos de mutação devem devolver erros de domínio tipados ou disc
 
 ### Classificação e desempate
 
-- [ ] Aplicam-se pontos, confronto direto, vitórias, gols marcados e gols sofridos exatamente nessa ordem.
-- [ ] O confronto direto de três ou mais participantes usa a mini-tabela completa definida neste documento.
-- [ ] Saldo de gols nunca interfere na ordem.
+- [ ] Aplicam-se pontos, vitórias, saldo de gols e gols marcados exatamente nessa ordem.
+- [ ] Saldo de gols interfere na ordem, mas não aparece como coluna.
 - [ ] Partidas em andamento entram provisoriamente; partidas pendentes não entram.
+- [ ] Classificação matematicamente garantida recebe destaque verde e posição exata garantida recebe destaque dourado.
 - [ ] Empate absoluto fora do corte compartilha posição e não cria partida extra.
 - [ ] Empate absoluto no corte cria partida decisiva para dois ou turno único para três ou mais.
 - [ ] Números do desempate não contaminam a tabela regular.
@@ -555,7 +553,7 @@ Todos os contratos de mutação devem devolver erros de domínio tipados ou disc
 ### Interface e rankings
 
 - [ ] As quatro primeiras linhas de cada grupo têm fundo azul-claro legível.
-- [ ] A tabela mostra todas as dez colunas especificadas e não mostra saldo de gols.
+- [ ] A tabela mostra todas as onze colunas especificadas e não mostra saldo de gols.
 - [ ] Os quatro rankings exibem no máximo cinco jogadores, incluem todo o torneio e desempataram visualmente por nome.
 - [ ] O elenco exibe jogador, clube real, posições e overall.
 - [ ] A chave apresenta somente fases já criadas e usa rolagem horizontal no celular.

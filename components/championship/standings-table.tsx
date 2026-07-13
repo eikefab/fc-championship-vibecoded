@@ -27,9 +27,14 @@ export function StandingsTable({
       <Table className="min-w-[720px]">
         <TableHeader>
           <TableRow>
-            <TableHead className="sticky left-0 z-20 w-12 bg-card text-center">#</TableHead>
-            <TableHead className="sticky left-12 z-20 min-w-40 bg-card">Participante</TableHead>
+            <TableHead className="sticky left-0 z-20 w-12 bg-card text-center">
+              #
+            </TableHead>
+            <TableHead className="sticky left-12 z-20 min-w-40 bg-card">
+              Participante
+            </TableHead>
             <TableHead className="text-center">P</TableHead>
+            <TableHead className="text-center">J</TableHead>
             <TableHead className="text-center">V</TableHead>
             <TableHead className="text-center">E</TableHead>
             <TableHead className="text-center">D</TableHead>
@@ -42,12 +47,25 @@ export function StandingsTable({
         <TableBody>
           {standings.map((entry) => {
             const isG4 = entry.position <= 4
+            const rowBackground = entry.positionGuaranteed
+              ? "bg-amber-100/80 hover:bg-amber-100"
+              : entry.qualificationGuaranteed
+                ? "bg-emerald-100/80 hover:bg-emerald-100"
+                : isG4
+                  ? "bg-qualification/60 hover:bg-qualification/80"
+                  : undefined
+            const stickyBackground = entry.positionGuaranteed
+              ? "bg-amber-100"
+              : entry.qualificationGuaranteed
+                ? "bg-emerald-100"
+                : isG4
+                  ? "bg-[#e3ebff]"
+                  : "bg-card"
             return (
-              <TableRow
-                key={entry.participantId}
-                className={isG4 ? "bg-qualification/60 hover:bg-qualification/80" : undefined}
-              >
-                <TableCell className={`sticky left-0 z-10 text-center font-mono text-sm ${isG4 ? "bg-[#e3ebff]" : "bg-card"}`}>
+              <TableRow key={entry.participantId} className={rowBackground}>
+                <TableCell
+                  className={`sticky left-0 z-10 text-center font-mono text-sm ${stickyBackground}`}
+                >
                   {entry.requiresTiebreak && (
                     <span className="mr-1" title="Empate no corte">
                       ⚡
@@ -55,29 +73,35 @@ export function StandingsTable({
                   )}
                   {entry.position}
                 </TableCell>
-                <TableCell className={`sticky left-12 z-10 font-semibold ${isG4 ? "bg-[#e3ebff]" : "bg-card"}`}>
+                <TableCell
+                  className={`sticky left-12 z-10 font-semibold ${stickyBackground}`}
+                >
                   {entry.participantName}
-                  {entry.provisional && (
+                  {entry.isLive ? (
+                    <Badge
+                      variant="outline"
+                      className="ml-1.5 animate-pulse border-red-200 bg-red-50 px-1.5 text-[9px] font-bold text-red-600"
+                    >
+                      AO VIVO
+                    </Badge>
+                  ) : entry.provisional ? (
                     <Badge
                       variant="outline"
                       className="ml-1.5 border-transparent bg-white/70 px-1.5 text-[9px] font-medium text-muted-foreground"
                     >
                       provisório
                     </Badge>
-                  )}
+                  ) : null}
                 </TableCell>
-                <TableCell className="text-center font-mono font-bold tabular-nums text-[#102a68]">
+                <TableCell className="text-center font-mono font-bold text-[#102a68] tabular-nums">
                   {entry.points}
                 </TableCell>
                 <TableCell className="text-center">
-                  {entry.wins}
+                  {entry.matchesPlayed}
                 </TableCell>
-                <TableCell className="text-center">
-                  {entry.draws}
-                </TableCell>
-                <TableCell className="text-center">
-                  {entry.losses}
-                </TableCell>
+                <TableCell className="text-center">{entry.wins}</TableCell>
+                <TableCell className="text-center">{entry.draws}</TableCell>
+                <TableCell className="text-center">{entry.losses}</TableCell>
                 <TableCell className="text-center">
                   {entry.goalsScored}
                 </TableCell>
@@ -87,9 +111,7 @@ export function StandingsTable({
                 <TableCell className="text-center">
                   {entry.yellowCards}
                 </TableCell>
-                <TableCell className="text-center">
-                  {entry.redCards}
-                </TableCell>
+                <TableCell className="text-center">{entry.redCards}</TableCell>
               </TableRow>
             )
           })}

@@ -61,15 +61,20 @@ export interface StandingEntryDto {
   participantId: string
   participantName: string
   points: number
+  matchesPlayed: number
   wins: number
   draws: number
   losses: number
   goalsScored: number
   goalsConceded: number
+  goalDifference: number
   yellowCards: number
   redCards: number
   provisional: boolean
+  isLive: boolean
   qualified: boolean
+  qualificationGuaranteed: boolean
+  positionGuaranteed: boolean
   requiresTiebreak: boolean
 }
 
@@ -104,9 +109,7 @@ export type TiebreakDecisionSeries = {
 }
 
 export type TiebreakDecision =
-  | TiebreakDecisionNone
-  | TiebreakDecisionMatch
-  | TiebreakDecisionSeries
+  TiebreakDecisionNone | TiebreakDecisionMatch | TiebreakDecisionSeries
 
 export interface TiebreakResolutionDto {
   qualifiedIds: string[]
