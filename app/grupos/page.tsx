@@ -114,6 +114,7 @@ export default async function GroupsPage() {
                         awayParticipantName={m.awayParticipantName}
                         homeScore={m.homeScore}
                         awayScore={m.awayScore}
+                        walkoverWinnerId={m.walkoverWinnerId}
                       />
                     ))}
                   </div>
@@ -157,6 +158,11 @@ export default async function GroupsPage() {
                                   >
                                     {m.status}
                                   </Badge>
+                                  {m.walkoverWinnerId ? (
+                                    <Badge variant="outline" className="ml-1 border-amber-400 text-[10px] text-amber-700">
+                                      W.O.
+                                    </Badge>
+                                  ) : null}
                                 </p>
                               </CardContent>
                             </Card>

@@ -18,6 +18,7 @@ export function planTiebreak(standings: StandingEntryDto[]): TiebreakDecision {
 
   if (
     fourth.points !== fifth.points ||
+    fourth.walkoverLosses !== fifth.walkoverLosses ||
     fourth.wins !== fifth.wins ||
     fourth.goalDifference !== fifth.goalDifference ||
     fourth.goalsScored !== fifth.goalsScored
@@ -28,6 +29,7 @@ export function planTiebreak(standings: StandingEntryDto[]): TiebreakDecision {
   const tied = standings.filter(
     (s) =>
       s.points === fourth.points &&
+      s.walkoverLosses === fourth.walkoverLosses &&
       s.wins === fourth.wins &&
       s.goalDifference === fourth.goalDifference &&
       s.goalsScored === fourth.goalsScored
@@ -123,6 +125,7 @@ export function resolveTiebreak(
       firstEliminated &&
       lastQualified &&
       lastQualified.points === firstEliminated.points &&
+      lastQualified.walkoverLosses === firstEliminated.walkoverLosses &&
       lastQualified.wins === firstEliminated.wins &&
       lastQualified.goalsScored - lastQualified.goalsConceded ===
         firstEliminated.goalsScored - firstEliminated.goalsConceded &&
@@ -131,6 +134,7 @@ export function resolveTiebreak(
       const stillTied = tiebreakStandings.filter(
         (s) =>
           s.points === lastQualified.points &&
+          s.walkoverLosses === lastQualified.walkoverLosses &&
           s.wins === lastQualified.wins &&
           s.goalsScored - s.goalsConceded ===
             lastQualified.goalsScored - lastQualified.goalsConceded &&
@@ -172,6 +176,7 @@ export function computeTiebreakStandings(
     awayParticipantId: string
     homeScore: number
     awayScore: number
+    walkoverWinnerId?: string | null
   }[]
 ): TiebreakStandingEntryDto[] {
   const statsMap = new Map<string, TiebreakStandingEntryDto>()
@@ -185,6 +190,7 @@ export function computeTiebreakStandings(
       wins: 0,
       draws: 0,
       losses: 0,
+      walkoverLosses: 0,
       goalsScored: 0,
       goalsConceded: 0,
     })
@@ -195,20 +201,37 @@ export function computeTiebreakStandings(
     const away = statsMap.get(match.awayParticipantId)
     if (!home || !away) continue
 
-    home.goalsScored += match.homeScore
-    home.goalsConceded += match.awayScore
-    away.goalsScored += match.awayScore
-    away.goalsConceded += match.homeScore
-
-    if (match.homeScore > match.awayScore) {
+    if (match.walkoverWinnerId === match.homeParticipantId) {
+      home.wins++
+      home.points += 3
+      away.losses++
+      away.walkoverLosses++
+    } else if (match.walkoverWinnerId === match.awayParticipantId) {
+      away.wins++
+      away.points += 3
+      home.losses++
+      home.walkoverLosses++
+    } else if (match.homeScore > match.awayScore) {
+      home.goalsScored += match.homeScore
+      home.goalsConceded += match.awayScore
+      away.goalsScored += match.awayScore
+      away.goalsConceded += match.homeScore
       home.wins++
       home.points += 3
       away.losses++
     } else if (match.awayScore > match.homeScore) {
+      home.goalsScored += match.homeScore
+      home.goalsConceded += match.awayScore
+      away.goalsScored += match.awayScore
+      away.goalsConceded += match.homeScore
       away.wins++
       away.points += 3
       home.losses++
     } else {
+      home.goalsScored += match.homeScore
+      home.goalsConceded += match.awayScore
+      away.goalsScored += match.awayScore
+      away.goalsConceded += match.homeScore
       home.draws++
       away.draws++
       home.points += 1
@@ -218,6 +241,9 @@ export function computeTiebreakStandings(
 
   const sorted = [...statsMap.values()].sort((a, b) => {
     if (b.points !== a.points) return b.points - a.points
+    if (a.walkoverLosses !== b.walkoverLosses) {
+      return a.walkoverLosses - b.walkoverLosses
+    }
     if (b.wins !== a.wins) return b.wins - a.wins
 
     const aGoalDifference = a.goalsScored - a.goalsConceded

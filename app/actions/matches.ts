@@ -9,6 +9,8 @@ import {
   removeMatchEvent,
   completeMatch,
   correctMatch,
+  declareWalkover,
+  correctWalkover,
 } from "@/lib/championship/application/match-service"
 import { createGroupTiebreak } from "@/lib/championship/application/tiebreak-service"
 import type { ActionResult } from "@/lib/championship/application/action-result"
@@ -97,6 +99,83 @@ export async function completeMatchAction(
   }
 
   const result = await completeMatch(parsed.data.matchId)
+
+  if (result.ok) {
+    revalidatePath(`/partidas/${parsed.data.matchId}`)
+    revalidatePath("/")
+    revalidatePath("/grupos")
+    revalidatePath("/mata-mata")
+  }
+
+  return result
+}
+
+export async function declareWalkoverAction(
+  _prev: ActionResult<unknown> | null,
+  formData: FormData,
+): Promise<ActionResult<unknown>> {
+  const parsed = z
+    .object({
+      matchId: z.string().min(1),
+      winnerParticipantId: z.string().min(1),
+    })
+    .safeParse({
+      matchId: formData.get("matchId"),
+      winnerParticipantId: formData.get("winnerParticipantId"),
+    })
+
+  if (!parsed.success) {
+    return {
+      ok: false,
+      error: { code: "VALIDATION_ERROR" as const, message: "Vencedor do W.O. inválido" },
+    }
+  }
+
+  const result = await declareWalkover(
+    parsed.data.matchId,
+    parsed.data.winnerParticipantId,
+  )
+
+  if (result.ok) {
+    revalidatePath(`/partidas/${parsed.data.matchId}`)
+    revalidatePath("/")
+    revalidatePath("/grupos")
+    revalidatePath("/mata-mata")
+  }
+
+  return result
+}
+
+export async function correctWalkoverAction(
+  _prev: ActionResult<unknown> | null,
+  formData: FormData,
+): Promise<ActionResult<unknown>> {
+  const parsed = z
+    .object({
+      matchId: z.string().min(1),
+      winnerParticipantId: z.string().nullable().optional(),
+      fingerprint: z.string().nullable().optional(),
+    })
+    .safeParse({
+      matchId: formData.get("matchId"),
+      winnerParticipantId: formData.get("winnerParticipantId") || null,
+      fingerprint: formData.get("fingerprint"),
+    })
+
+  if (!parsed.success) {
+    return {
+      ok: false,
+      error: { code: "VALIDATION_ERROR" as const, message: "Dados da correção inválidos" },
+    }
+  }
+
+  const result = await correctWalkover(
+    parsed.data.matchId,
+    parsed.data.winnerParticipantId ?? null,
+    parsed.data.fingerprint
+      ? { fingerprint: parsed.data.fingerprint }
+      : undefined,
+  )
 
   if (result.ok) {
     revalidatePath(`/partidas/${parsed.data.matchId}`)

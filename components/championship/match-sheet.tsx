@@ -23,12 +23,17 @@ export function MatchSheet({ match }: { match: MatchDto }) {
               {home?.participantName}
             </span>
             <span className="rounded-xl bg-white px-4 py-3 font-heading text-3xl text-[#102a68] shadow-lg sm:px-6 sm:text-5xl">
-              <Scoreline homeScore={home?.score ?? null} awayScore={away?.score ?? null} homePenaltyScore={home?.penaltyScore} awayPenaltyScore={away?.penaltyScore} />
+              <Scoreline homeScore={home?.score ?? null} awayScore={away?.score ?? null} homePenaltyScore={home?.penaltyScore} awayPenaltyScore={away?.penaltyScore} isWalkover={match.walkoverWinnerId != null} />
             </span>
             <span className="truncate font-heading text-2xl font-bold uppercase sm:text-4xl">
               {away?.participantName}
             </span>
           </div>
+          {match.walkoverWinnerId ? (
+            <p className="text-center text-xs font-semibold uppercase tracking-[0.16em] text-blue-200">
+              Vitória por W.O. de {match.sides.find((side) => side.participantId === match.walkoverWinnerId)?.participantName}
+            </p>
+          ) : null}
         </CardContent>
       </Card>
   )

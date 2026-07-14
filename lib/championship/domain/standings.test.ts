@@ -21,7 +21,8 @@ function match(
   awayParticipantId: string,
   homeScore: number | null,
   awayScore: number | null,
-  status: MatchStatus
+  status: MatchStatus,
+  walkoverWinnerId: string | null = null,
 ): MatchDto {
   const home = participants.find(
     (participant) => participant.id === homeParticipantId
@@ -37,6 +38,7 @@ function match(
     groupCode: "A",
     round: 1,
     knockoutStage: null,
+    walkoverWinnerId,
     completedAt: status === "COMPLETED" ? "2026-07-12T12:00:00.000Z" : null,
     sides: [
       {
@@ -199,4 +201,48 @@ test("distinguishes guaranteed qualification from an exact guaranteed position",
   )
   assert.match(markup, /bg-amber-100\/80/)
   assert.match(markup, /bg-emerald-100\/80/)
+})
+
+test("counts a walkover as a win without inventing goals", () => {
+  const standings = calculateStandingsWithTiebreak(participants, [
+    match("wo", "a", "b", null, null, "COMPLETED", "a"),
+  ])
+  const alfa = standings.find((entry) => entry.participantId === "a")!
+  const bravo = standings.find((entry) => entry.participantId === "b")!
+
+  assert.deepEqual(
+    {
+      points: alfa.points,
+      wins: alfa.wins,
+      goalsScored: alfa.goalsScored,
+      goalDifference: alfa.goalDifference,
+      walkoverLosses: bravo.walkoverLosses,
+    },
+    { points: 3, wins: 1, goalsScored: 0, goalDifference: 0, walkoverLosses: 1 },
+  )
+})
+
+test("uses fewer walkover losses before the remaining tie-break criteria", () => {
+  const standings = calculateStandingsWithTiebreak(participants, [
+    match("a-c", "a", "c", null, null, "COMPLETED", "a"),
+    match("a-d", "a", "d", 0, 2, "COMPLETED"),
+    match("b-c", "b", "c", 1, 0, "COMPLETED"),
+    match("b-d", "b", "d", null, null, "COMPLETED", "d"),
+  ])
+
+  assert.ok(
+    standings.find((entry) => entry.participantId === "a")!.position <
+      standings.find((entry) => entry.participantId === "b")!.position,
+  )
+})
+
+test("shows a tooltip marker for walkover losses", () => {
+  const standings = calculateStandingsWithTiebreak(participants, [
+    match("wo", "a", "b", null, null, "COMPLETED", "a"),
+  ])
+  const markup = renderToStaticMarkup(
+    createElement(StandingsTable, { standings }),
+  )
+
+  assert.match(markup, /data-slot="tooltip-trigger"/)
 })

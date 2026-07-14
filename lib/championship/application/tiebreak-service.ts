@@ -51,6 +51,7 @@ export async function createGroupTiebreak(
     groupCode: group.code as "A" | "B",
     round: m.round,
     knockoutStage: null as null,
+    walkoverWinnerId: m.walkoverWinnerId,
     completedAt: m.completedAt?.toISOString() ?? null,
     sides: m.participants.map((mp) => ({
       participantId: mp.participantId,

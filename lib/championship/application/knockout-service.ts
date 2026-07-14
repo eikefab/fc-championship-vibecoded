@@ -98,6 +98,7 @@ export async function drawKnockoutStage(
         groupCode: group.code,
         round: match.round,
         knockoutStage: null,
+        walkoverWinnerId: match.walkoverWinnerId,
         completedAt: match.completedAt?.toISOString() ?? null,
         sides: match.participants.map((side) => ({
           participantId: side.participantId,
@@ -172,6 +173,7 @@ export async function drawKnockoutStage(
                   awayParticipantId: away?.participantId ?? "",
                   homeScore: home?.score ?? 0,
                   awayScore: away?.score ?? 0,
+                  walkoverWinnerId: match.walkoverWinnerId,
                 }
               }),
             )
@@ -269,10 +271,11 @@ export async function drawKnockoutStage(
       )
     }
 
-    const winners = quarters.map((q) => {
-      const home = q.participants.find((p) => p.role === "HOME")!
-      const away = q.participants.find((p) => p.role === "AWAY")!
-      if ((home.score ?? 0) > (away.score ?? 0)) return home.participantId
+      const winners = quarters.map((q) => {
+        const home = q.participants.find((p) => p.role === "HOME")!
+        const away = q.participants.find((p) => p.role === "AWAY")!
+        if (q.walkoverWinnerId) return q.walkoverWinnerId
+        if ((home.score ?? 0) > (away.score ?? 0)) return home.participantId
       if ((away.score ?? 0) > (home.score ?? 0)) return away.participantId
       return (home.penaltyScore ?? 0) > (away.penaltyScore ?? 0)
         ? home.participantId

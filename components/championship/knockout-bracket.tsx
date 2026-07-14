@@ -37,6 +37,7 @@ function BracketCard({ node, label }: { node: KnockoutNodeDto; label: string }) 
               awayScore={node.awayScore}
               homePenaltyScore={node.homePenaltyScore}
               awayPenaltyScore={node.awayPenaltyScore}
+              isWalkover={node.walkoverWinnerId != null}
             />
           </span>
           <span

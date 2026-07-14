@@ -8,6 +8,7 @@ import {
 } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
 import type { StandingEntryDto } from "@/lib/championship/domain"
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 
 export function StandingsTable({
   standings,
@@ -23,7 +24,8 @@ export function StandingsTable({
   }
 
   return (
-    <div className="-mx-4 overflow-x-auto px-4">
+    <TooltipProvider>
+      <div className="-mx-4 overflow-x-auto px-4">
       <Table className="min-w-[760px]">
         <TableHeader>
           <TableRow>
@@ -95,7 +97,17 @@ export function StandingsTable({
                   ) : null}
                 </TableCell>
                 <TableCell className="text-center font-mono font-bold text-[#102a68] tabular-nums">
-                  {entry.points}
+                  <span className="inline-flex items-center justify-center">
+                    {entry.points}
+                    {entry.walkoverLosses > 0 ? (
+                      <Tooltip>
+                        <TooltipTrigger className="ml-0.5 cursor-help text-xs font-bold text-[#8a4e00]">*</TooltipTrigger>
+                        <TooltipContent>
+                          Este jogador perdeu {entry.walkoverLosses} {entry.walkoverLosses === 1 ? "partida" : "partidas"} por W.O.
+                        </TooltipContent>
+                      </Tooltip>
+                    ) : null}
+                  </span>
                 </TableCell>
                 <TableCell className="text-center">
                   {entry.matchesPlayed}
@@ -121,6 +133,7 @@ export function StandingsTable({
           })}
         </TableBody>
       </Table>
-    </div>
+      </div>
+    </TooltipProvider>
   )
 }

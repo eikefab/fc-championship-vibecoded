@@ -51,6 +51,7 @@ export interface MatchDto {
   groupCode: GroupCode | null
   round: number | null
   knockoutStage: KnockoutStage | null
+  walkoverWinnerId: string | null
   completedAt: string | null
   sides: MatchSideDto[]
   events: MatchEventDto[]
@@ -65,6 +66,7 @@ export interface StandingEntryDto {
   wins: number
   draws: number
   losses: number
+  walkoverLosses: number
   goalsScored: number
   goalsConceded: number
   goalDifference: number
@@ -83,6 +85,7 @@ export interface TiebreakInputMatchDto {
   type: MatchType
   status: MatchStatus
   round: number | null
+  walkoverWinnerId: string | null
   sides: MatchSideDto[]
 }
 
@@ -125,6 +128,7 @@ export interface TiebreakStandingEntryDto {
   wins: number
   draws: number
   losses: number
+  walkoverLosses: number
   goalsScored: number
   goalsConceded: number
 }
@@ -169,5 +173,6 @@ export interface KnockoutNodeDto {
   awayScore: number | null
   homePenaltyScore: number | null
   awayPenaltyScore: number | null
+  walkoverWinnerId: string | null
   winnerId: string | null
 }

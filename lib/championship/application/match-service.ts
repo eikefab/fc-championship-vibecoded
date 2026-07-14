@@ -62,6 +62,10 @@ export async function updateMatchScore(
     return failure("NOT_FOUND", "Partida não encontrada")
   }
 
+  if (match.walkoverWinnerId) {
+    return failure("STATE_CONFLICT", "Esta partida foi concluída por W.O.; use a correção de W.O.")
+  }
+
   if (match.status === "COMPLETED") {
     if (confirmation) {
       const currentFp = await computeCorrectionFingerprint(matchId)
@@ -249,63 +253,161 @@ export async function completeMatch(
       },
     })
 
-    if (
-      match.knockoutStage === "SEMI_FINALS" &&
-      match.type === "KNOCKOUT"
-    ) {
-      const semis = await tx.match.findMany({
-        where: { knockoutStage: "SEMI_FINALS", status: "COMPLETED" },
-        include: { participants: { include: { participant: true } } },
-      })
-
-      const finalCount = await tx.match.count({
-        where: { knockoutStage: "FINAL" },
-      })
-
-      if (semis.length >= 2 && finalCount === 0) {
-        const winners = semis.map((s) => {
-          const h = s.participants.find((p) => p.role === "HOME")!
-          const a = s.participants.find((p) => p.role === "AWAY")!
-          if ((h.score ?? 0) > (a.score ?? 0)) return h.participantId
-          if ((a.score ?? 0) > (h.score ?? 0)) return a.participantId
-          return (h.penaltyScore ?? 0) > (a.penaltyScore ?? 0)
-            ? h.participantId
-            : a.participantId
-        })
-
-        if (winners.length === 2 && winners[0] && winners[1]) {
-          await tx.match.create({
-            data: {
-              type: "KNOCKOUT",
-              knockoutStage: "FINAL",
-              status: "PENDING",
-              participants: {
-                create: [
-                  {
-                    participantId: winners[0],
-                    role: "HOME",
-                  },
-                  {
-                    participantId: winners[1],
-                    role: "AWAY",
-                  },
-                ],
-              },
-            },
-          })
-          finalCreated = true
-        }
-      }
+    if (match.knockoutStage === "SEMI_FINALS" && match.type === "KNOCKOUT") {
+      finalCreated = await createFinalIfNeeded(tx)
     }
   })
 
   return success({ finalCreated })
 }
 
+export async function declareWalkover(
+  matchId: string,
+  winnerParticipantId: string,
+): Promise<ActionResult<{ winnerParticipantId: string; finalCreated: boolean }>> {
+  const match = await prisma.match.findUnique({
+    where: { id: matchId },
+    include: { participants: true },
+  })
+
+  if (!match) return failure("NOT_FOUND", "Partida não encontrada")
+  if (match.status !== "PENDING") {
+    return failure("STATE_CONFLICT", "W.O. só pode ser registrado antes de iniciar a partida")
+  }
+
+  const isParticipant = match.participants.some(
+    (participant) => participant.participantId === winnerParticipantId,
+  )
+  if (!isParticipant) {
+    return failure("VALIDATION_ERROR", "O vencedor do W.O. precisa participar da partida")
+  }
+
+  const result = await prisma.$transaction(async (tx) => {
+    await tx.match.update({
+      where: { id: matchId },
+      data: {
+        status: "COMPLETED",
+        completedAt: new Date(),
+        walkoverWinnerId: winnerParticipantId,
+      },
+    })
+
+    const finalCreated =
+      match.type === "KNOCKOUT" && match.knockoutStage === "SEMI_FINALS"
+        ? await createFinalIfNeeded(tx)
+        : false
+
+    return { winnerParticipantId, finalCreated }
+  })
+
+  return success(result)
+}
+
+export async function correctWalkover(
+  matchId: string,
+  winnerParticipantId: string | null,
+  confirmation?: { fingerprint: string },
+): Promise<ActionResult<{ affectedStages: string[] }>> {
+  const match = await prisma.match.findUnique({
+    where: { id: matchId },
+    include: { participants: true },
+  })
+
+  if (!match) return failure("NOT_FOUND", "Partida não encontrada")
+  if (match.status !== "COMPLETED" || !match.walkoverWinnerId) {
+    return failure("STATE_CONFLICT", "A partida não possui um W.O. corrigível")
+  }
+  if (
+    winnerParticipantId &&
+    !match.participants.some(
+      (participant) => participant.participantId === winnerParticipantId,
+    )
+  ) {
+    return failure("VALIDATION_ERROR", "O vencedor do W.O. precisa participar da partida")
+  }
+
+  const currentFp = await computeCorrectionFingerprint(matchId)
+  const affected = await analyzeCorrection(matchId)
+  if (!confirmation) {
+    return failure("CONFIRMATION_REQUIRED", "Confirme a correção do W.O.", {
+      confirmation: { fingerprint: currentFp, affectedStages: affected.affectedStages },
+    })
+  }
+  if (confirmation.fingerprint !== currentFp) {
+    return failure("STALE_CONFIRMATION", "Os dados da partida foram alterados. Revise e confirme novamente.", {
+      confirmation: { fingerprint: currentFp, affectedStages: affected.affectedStages },
+    })
+  }
+
+  await prisma.$transaction(async (tx) => {
+    await deleteMatchDownstream(tx, match)
+    await tx.match.update({
+      where: { id: matchId },
+      data: winnerParticipantId
+        ? { walkoverWinnerId: winnerParticipantId, completedAt: new Date() }
+        : {
+            walkoverWinnerId: null,
+            status: "PENDING",
+            completedAt: null,
+            participants: {
+              updateMany: match.participants.map((participant) => ({
+                where: { id: participant.id },
+                data: { score: null, penaltyScore: null },
+              })),
+            },
+          },
+    })
+  })
+
+  return success({ affectedStages: affected.affectedStages })
+}
+
+async function createFinalIfNeeded(
+  tx: Prisma.TransactionClient,
+): Promise<boolean> {
+  const semis = await tx.match.findMany({
+    where: { knockoutStage: "SEMI_FINALS", status: "COMPLETED" },
+    include: { participants: true },
+  })
+  const finalCount = await tx.match.count({ where: { knockoutStage: "FINAL" } })
+  if (semis.length < 2 || finalCount > 0) return false
+
+  const winners = semis.map((semi) => {
+    if (semi.walkoverWinnerId) return semi.walkoverWinnerId
+    const home = semi.participants.find((participant) => participant.role === "HOME")!
+    const away = semi.participants.find((participant) => participant.role === "AWAY")!
+    if ((home.score ?? 0) !== (away.score ?? 0)) {
+      return (home.score ?? 0) > (away.score ?? 0)
+        ? home.participantId
+        : away.participantId
+    }
+    return (home.penaltyScore ?? 0) > (away.penaltyScore ?? 0)
+      ? home.participantId
+      : away.participantId
+  })
+
+  if (winners.length !== 2 || winners.some((winner) => !winner)) return false
+
+  await tx.match.create({
+    data: {
+      type: "KNOCKOUT",
+      knockoutStage: "FINAL",
+      status: "PENDING",
+      participants: {
+        create: [
+          { participantId: winners[0], role: "HOME" },
+          { participantId: winners[1], role: "AWAY" },
+        ],
+      },
+    },
+  })
+  return true
+}
+
 async function computeCorrectionFingerprint(matchId: string): Promise<string> {
   const match = await prisma.match.findUnique({
     where: { id: matchId },
-    select: { updatedAt: true, knockoutStage: true, type: true, status: true },
+    select: { updatedAt: true, knockoutStage: true, type: true, groupId: true, status: true },
   })
 
   if (!match) return ""
@@ -318,6 +420,15 @@ async function computeCorrectionFingerprint(matchId: string): Promise<string> {
       select: { id: true, updatedAt: true },
     })
     downstreamIds = downstream.map((d) => `${d.id}:${d.updatedAt.toISOString()}`)
+    if (match.groupId) {
+      const tiebreaks = await prisma.groupTiebreak.findMany({
+        where: { groupId: match.groupId },
+        select: { id: true, updatedAt: true },
+      })
+      downstreamIds.push(
+        ...tiebreaks.map((tiebreak) => `${tiebreak.id}:${tiebreak.updatedAt.toISOString()}`),
+      )
+    }
   } else if (match.knockoutStage === "QUARTER_FINALS") {
     const downstream = await prisma.match.findMany({
       where: {
@@ -344,7 +455,7 @@ export async function analyzeCorrection(
 ): Promise<{ affectedStages: string[] }> {
   const match = await prisma.match.findUnique({
     where: { id: matchId },
-    select: { type: true, knockoutStage: true },
+    select: { type: true, knockoutStage: true, groupId: true },
   })
 
   if (!match) return { affectedStages: [] }
@@ -352,6 +463,10 @@ export async function analyzeCorrection(
   const affectedStages: string[] = []
 
   if (match.type === "REGULAR_GROUP") {
+    if (match.groupId) {
+      const tiebreakCount = await prisma.groupTiebreak.count({ where: { groupId: match.groupId } })
+      if (tiebreakCount > 0) affectedStages.push("GROUP_TIEBREAK")
+    }
     const hasQuarters = await prisma.match.count({
       where: { knockoutStage: "QUARTER_FINALS" },
     })
@@ -361,6 +476,13 @@ export async function analyzeCorrection(
     const hasFinal = await prisma.match.count({
       where: { knockoutStage: "FINAL" },
     })
+    if (hasQuarters > 0) affectedStages.push("QUARTER_FINALS")
+    if (hasSemis > 0) affectedStages.push("SEMI_FINALS")
+    if (hasFinal > 0) affectedStages.push("FINAL")
+  } else if (match.type === "GROUP_TIEBREAK") {
+    const hasQuarters = await prisma.match.count({ where: { knockoutStage: "QUARTER_FINALS" } })
+    const hasSemis = await prisma.match.count({ where: { knockoutStage: "SEMI_FINALS" } })
+    const hasFinal = await prisma.match.count({ where: { knockoutStage: "FINAL" } })
     if (hasQuarters > 0) affectedStages.push("QUARTER_FINALS")
     if (hasSemis > 0) affectedStages.push("SEMI_FINALS")
     if (hasFinal > 0) affectedStages.push("FINAL")
@@ -385,12 +507,17 @@ export async function analyzeCorrection(
 
 async function deleteMatchDownstream(
   tx: Prisma.TransactionClient | typeof prisma,
-  match: { type: string; knockoutStage: string | null },
+  match: { type: string; knockoutStage: string | null; groupId?: string | null },
 ) {
   if (match.type === "REGULAR_GROUP") {
+    if (match.groupId) {
+      await tx.groupTiebreak.deleteMany({ where: { groupId: match.groupId } })
+    }
     await tx.match.deleteMany({
       where: { knockoutStage: { not: null } },
     })
+  } else if (match.type === "GROUP_TIEBREAK") {
+    await tx.match.deleteMany({ where: { knockoutStage: { not: null } } })
   } else if (match.knockoutStage === "QUARTER_FINALS") {
     await tx.match.deleteMany({
       where: { knockoutStage: { in: ["SEMI_FINALS", "FINAL"] } },
@@ -410,6 +537,14 @@ export async function correctMatch(
   awayPenaltyScore?: number,
   confirmation?: { fingerprint: string },
 ): Promise<ActionResult<{ affectedStages: string[] }>> {
+  const currentMatch = await prisma.match.findUnique({
+    where: { id: matchId },
+    select: { walkoverWinnerId: true },
+  })
+  if (currentMatch?.walkoverWinnerId) {
+    return failure("STATE_CONFLICT", "Esta partida foi concluída por W.O.; use a correção de W.O.")
+  }
+
   if (!confirmation) {
     return failure("CONFIRMATION_REQUIRED", "Correção requer confirmação")
   }
@@ -429,7 +564,7 @@ export async function correctMatch(
   await prisma.$transaction(async (tx) => {
     const match = await tx.match.findUnique({
       where: { id: matchId },
-      select: { type: true, knockoutStage: true },
+      select: { type: true, knockoutStage: true, groupId: true },
     })
     if (match) {
       await deleteMatchDownstream(tx, match)

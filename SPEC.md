@@ -256,9 +256,13 @@ PENDING -> ONGOING -> COMPLETED
 
 Não há transição baseada em relógio. Reabrir uma partida concluída é tratado como correção, com a mesma análise de dependências.
 
+Uma partida `PENDING` também pode ser concluída por W.O. O operador escolhe um dos participantes como vencedor; o resultado recebe 3 pontos e vitória para o vencedor, derrota para o adversário e não registra gols, placar ou eventos. Um W.O. concluído pode ter o vencedor trocado ou ser removido por uma correção confirmada; removê-lo devolve a partida a `PENDING`.
+
 ### 6.2 Placar autoritativo
 
 O placar normal digitado é a fonte de verdade para vitória, empate, derrota, pontos, gols marcados e gols sofridos. A contagem de eventos `GOAL` pode divergir do placar para permitir gol contra, autoria desconhecida ou cadastro incompleto.
+
+Quando `walkoverWinnerId` estiver preenchido, ele é a fonte de verdade do vencedor e substitui o placar para pontos, vitórias e derrotas. GP, GC e saldo permanecem inalterados.
 
 Salvar um placar não cria nem remove eventos automaticamente. Salvar eventos não altera o placar automaticamente.
 
@@ -293,6 +297,8 @@ Partidas de desempate não alteram pontos, vitórias, empates, derrotas, gols ou
 - empate: 1 ponto para cada participante;
 - derrota: 0 pontos.
 
+Em igualdade de pontos, menos derrotas por W.O. é aplicado antes de vitórias, saldo de gols e gols marcados. A tabela mostra um asterisco ao lado dos pontos de quem perdeu por W.O., com a quantidade no tooltip.
+
 ### 7.3 Colunas
 
 A tabela exibe, nesta ordem:
@@ -317,9 +323,10 @@ O saldo de gols é exibido imediatamente após os gols sofridos.
 Aplicar os critérios na seguinte ordem:
 
 1. maior pontuação global;
-2. maior quantidade global de vitórias;
-3. maior saldo de gols global;
-4. maior quantidade global de gols marcados.
+2. menor quantidade global de derrotas por W.O.;
+3. maior quantidade global de vitórias;
+4. maior saldo de gols global;
+5. maior quantidade global de gols marcados.
 
 Uma igualdade absoluta que não atravesse o corte entre quarto e quinto não cria desempate. Os participantes compartilham a mesma posição esportiva e são exibidos em ordem alfabética apenas para estabilidade visual. Como o mata-mata é sorteado livremente, a ordem interna dos quatro classificados não produz vantagem.
 
@@ -534,7 +541,7 @@ Todos os contratos de mutação devem devolver erros de domínio tipados ou disc
 
 ### Classificação e desempate
 
-- [ ] Aplicam-se pontos, vitórias, saldo de gols e gols marcados exatamente nessa ordem.
+- [ ] Aplicam-se pontos, menos derrotas por W.O., vitórias, saldo de gols e gols marcados exatamente nessa ordem.
 - [ ] Saldo de gols interfere na ordem e aparece imediatamente após os gols sofridos.
 - [ ] Partidas em andamento entram provisoriamente; partidas pendentes não entram.
 - [ ] Classificação matematicamente garantida recebe destaque verde e posição exata garantida recebe destaque dourado.

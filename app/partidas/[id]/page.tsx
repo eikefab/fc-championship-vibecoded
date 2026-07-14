@@ -53,9 +53,14 @@ export default async function MatchPage({
         <MatchControls
           matchId={match.id}
           status={match.status}
-          homeScore={match.sides.find((s) => s.role === "HOME")?.score ?? null}
-          awayScore={match.sides.find((s) => s.role === "AWAY")?.score ?? null}
-        />
+        homeScore={match.sides.find((s) => s.role === "HOME")?.score ?? null}
+        awayScore={match.sides.find((s) => s.role === "AWAY")?.score ?? null}
+        homeParticipantId={match.sides.find((s) => s.role === "HOME")?.participantId ?? ""}
+        homeParticipantName={match.sides.find((s) => s.role === "HOME")?.participantName ?? ""}
+        awayParticipantId={match.sides.find((s) => s.role === "AWAY")?.participantId ?? ""}
+        awayParticipantName={match.sides.find((s) => s.role === "AWAY")?.participantName ?? ""}
+        walkoverWinnerId={match.walkoverWinnerId}
+      />
         {(match.status === "ONGOING" || match.status === "COMPLETED") ? (
           <EventForm matchId={match.id} players={playerOptions} events={events} />
         ) : (

@@ -22,10 +22,13 @@ type DashboardData = {
   knockoutStage: string | null
   recentResults: {
     id: string
+    homeParticipantId: string
+    awayParticipantId: string
     homeName: string
     awayName: string
     homeScore: number | null
     awayScore: number | null
+    walkoverWinnerId: string | null
     status: string
   }[]
   leaderboards: LeaderboardsDto
@@ -47,7 +50,7 @@ export async function getDashboardData(): Promise<DashboardData> {
         take: 10,
         include: {
           participants: {
-            include: { participant: { select: { name: true } } },
+            include: { participant: { select: { id: true, name: true } } },
           },
         },
       }),
@@ -141,10 +144,13 @@ export async function getDashboardData(): Promise<DashboardData> {
       const away = m.participants.find((p) => p.role === "AWAY")
       return {
         id: m.id,
+        homeParticipantId: home?.participant.id ?? "",
+        awayParticipantId: away?.participant.id ?? "",
         homeName: home?.participant.name ?? "?",
         awayName: away?.participant.name ?? "?",
         homeScore: home?.score ?? null,
         awayScore: away?.score ?? null,
+        walkoverWinnerId: m.walkoverWinnerId,
         status: m.status,
       }
     }),
@@ -172,6 +178,7 @@ type GroupData = {
       awayParticipantName: string
       homeScore: number | null
       awayScore: number | null
+      walkoverWinnerId: string | null
       isTiebreak: boolean
     }[]
     byeParticipantId: string
@@ -186,6 +193,7 @@ type GroupData = {
     matches: {
       id: string
       status: string
+      walkoverWinnerId: string | null
     }[]
   }[]
 }
@@ -250,6 +258,7 @@ export async function getGroupsData(): Promise<GroupData[]> {
           awayParticipantName: string
           homeScore: number | null
           awayScore: number | null
+          walkoverWinnerId: string | null
           isTiebreak: boolean
         }[]
         byeParticipantId: string
@@ -282,6 +291,7 @@ export async function getGroupsData(): Promise<GroupData[]> {
         awayParticipantName: away?.participant.name ?? "",
         homeScore: home?.score ?? null,
         awayScore: away?.score ?? null,
+        walkoverWinnerId: match.walkoverWinnerId,
         isTiebreak: false,
       })
     }
@@ -308,6 +318,7 @@ export async function getGroupsData(): Promise<GroupData[]> {
         matches: tb.matches.map((m) => ({
           id: m.id,
           status: m.status,
+          walkoverWinnerId: m.walkoverWinnerId,
         })),
       })),
     }
@@ -345,7 +356,8 @@ export async function getKnockoutData(): Promise<KnockoutData> {
       if (home && away) {
         const hScore = home.score ?? 0
         const aScore = away.score ?? 0
-        if (hScore > aScore) winnerId = home.participantId
+        if (m.walkoverWinnerId) winnerId = m.walkoverWinnerId
+        else if (hScore > aScore) winnerId = home.participantId
         else if (aScore > hScore) winnerId = away.participantId
         else {
           const hPen = home.penaltyScore ?? -1
@@ -367,6 +379,7 @@ export async function getKnockoutData(): Promise<KnockoutData> {
       awayScore: away?.score ?? null,
       homePenaltyScore: home?.penaltyScore ?? null,
       awayPenaltyScore: away?.penaltyScore ?? null,
+      walkoverWinnerId: m.walkoverWinnerId,
       winnerId,
     }
   }
@@ -474,6 +487,7 @@ function toMatchDto(m: {
   round?: number | null
   completedAt?: Date | string | null
   knockoutStage?: string | null
+  walkoverWinnerId?: string | null
   group?: { code: string } | null
   participants: {
     participantId: string
@@ -498,6 +512,7 @@ function toMatchDto(m: {
     round: m.round ?? null,
     knockoutStage:
       (m.knockoutStage as MatchDto["knockoutStage"]) ?? null,
+    walkoverWinnerId: m.walkoverWinnerId ?? null,
     completedAt:
       m.completedAt instanceof Date
         ? m.completedAt.toISOString()

@@ -10,6 +10,7 @@ import type {
 export function getDecisiveWinner(match: {
   status: string
   knockoutStage: KnockoutStage
+  walkoverWinnerId?: string | null
   sides: MatchSideDto[]
 }): string {
   if (match.status !== "COMPLETED") {
@@ -27,6 +28,16 @@ export function getDecisiveWinner(match: {
       "MATCH_NOT_FOUND",
       "Match sides not complete",
     )
+  }
+
+  if (match.walkoverWinnerId) {
+    if (![home.participantId, away.participantId].includes(match.walkoverWinnerId)) {
+      throw new DomainInvariantError(
+        "INVALID_MATCH_STATE",
+        "Walkover winner must be one of the match participants",
+      )
+    }
+    return match.walkoverWinnerId
   }
 
   const homeScore = home.score ?? 0

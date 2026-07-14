@@ -3,12 +3,18 @@ export function Scoreline({
   awayScore,
   homePenaltyScore,
   awayPenaltyScore,
+  isWalkover = false,
 }: {
   homeScore: number | null
   awayScore: number | null
   homePenaltyScore?: number | null
   awayPenaltyScore?: number | null
+  isWalkover?: boolean
 }) {
+  if (isWalkover) {
+    return <span className="font-heading font-bold uppercase tracking-wide">W.O.</span>
+  }
+
   const showScore = homeScore != null && awayScore != null
   const hasPenalties =
     homePenaltyScore != null && awayPenaltyScore != null

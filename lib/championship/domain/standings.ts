@@ -7,6 +7,7 @@ interface RawStats {
   wins: number
   draws: number
   losses: number
+  walkoverLosses: number
   goalsScored: number
   goalsConceded: number
   yellowCards: number
@@ -37,6 +38,7 @@ export function calculateStandings(
       wins: 0,
       draws: 0,
       losses: 0,
+      walkoverLosses: 0,
       goalsScored: 0,
       goalsConceded: 0,
       yellowCards: 0,
@@ -69,12 +71,21 @@ export function calculateStandings(
     const homeScore = home.score ?? 0
     const awayScore = away.score ?? 0
 
-    homeStats.goalsScored += homeScore
-    homeStats.goalsConceded += awayScore
-    awayStats.goalsScored += awayScore
-    awayStats.goalsConceded += homeScore
+    if (match.walkoverWinnerId) {
+      const winner = statsMap.get(match.walkoverWinnerId)
+      const loser = winner?.participantId === home.participantId
+        ? awayStats
+        : winner?.participantId === away.participantId
+          ? homeStats
+          : null
 
-    if (homeScore > awayScore) {
+      if (winner && loser) {
+        winner.wins++
+        winner.points += 3
+        loser.losses++
+        loser.walkoverLosses++
+      }
+    } else if (homeScore > awayScore) {
       homeStats.wins++
       homeStats.points += 3
       awayStats.losses++
@@ -87,6 +98,13 @@ export function calculateStandings(
       awayStats.draws++
       homeStats.points += 1
       awayStats.points += 1
+    }
+
+    if (!match.walkoverWinnerId) {
+      homeStats.goalsScored += homeScore
+      homeStats.goalsConceded += awayScore
+      awayStats.goalsScored += awayScore
+      awayStats.goalsConceded += homeScore
     }
 
     for (const event of match.events) {
@@ -114,6 +132,7 @@ export function calculateStandings(
     wins: stats.wins,
     draws: stats.draws,
     losses: stats.losses,
+    walkoverLosses: stats.walkoverLosses,
     goalsScored: stats.goalsScored,
     goalsConceded: stats.goalsConceded,
     goalDifference: stats.goalsScored - stats.goalsConceded,
@@ -150,6 +169,7 @@ export function calculateStandingsWithTiebreak(
       wins: 0,
       draws: 0,
       losses: 0,
+      walkoverLosses: 0,
       goalsScored: 0,
       goalsConceded: 0,
       yellowCards: 0,
@@ -182,12 +202,21 @@ export function calculateStandingsWithTiebreak(
     const homeScore = home.score ?? 0
     const awayScore = away.score ?? 0
 
-    homeStats.goalsScored += homeScore
-    homeStats.goalsConceded += awayScore
-    awayStats.goalsScored += awayScore
-    awayStats.goalsConceded += homeScore
+    if (match.walkoverWinnerId) {
+      const winner = statsMap.get(match.walkoverWinnerId)
+      const loser = winner?.participantId === home.participantId
+        ? awayStats
+        : winner?.participantId === away.participantId
+          ? homeStats
+          : null
 
-    if (homeScore > awayScore) {
+      if (winner && loser) {
+        winner.wins++
+        winner.points += 3
+        loser.losses++
+        loser.walkoverLosses++
+      }
+    } else if (homeScore > awayScore) {
       homeStats.wins++
       homeStats.points += 3
       awayStats.losses++
@@ -200,6 +229,13 @@ export function calculateStandingsWithTiebreak(
       awayStats.draws++
       homeStats.points += 1
       awayStats.points += 1
+    }
+
+    if (!match.walkoverWinnerId) {
+      homeStats.goalsScored += homeScore
+      homeStats.goalsConceded += awayScore
+      awayStats.goalsScored += awayScore
+      awayStats.goalsConceded += homeScore
     }
 
     for (const event of match.events) {
@@ -236,6 +272,7 @@ export function calculateStandingsWithTiebreak(
     wins: stats.wins,
     draws: stats.draws,
     losses: stats.losses,
+    walkoverLosses: stats.walkoverLosses,
     goalsScored: stats.goalsScored,
     goalsConceded: stats.goalsConceded,
     goalDifference: stats.goalsScored - stats.goalsConceded,
@@ -268,6 +305,7 @@ function calculateGuarantees(
       const tied = currentOrder.filter(
         (candidate) =>
           candidate.points === entry.points &&
+          candidate.walkoverLosses === entry.walkoverLosses &&
           candidate.wins === entry.wins &&
           candidate.goalsScored - candidate.goalsConceded ===
             entry.goalsScored - entry.goalsConceded &&
@@ -295,27 +333,39 @@ function calculateGuarantees(
     const away = match.sides.find((side) => side.role === "AWAY")
     if (!home || !away) continue
 
-    const homeScore = home.score ?? 0
-    const awayScore = away.score ?? 0
-    if (homeScore > awayScore) {
+    if (match.walkoverWinnerId === home.participantId) {
       basePoints.set(
         home.participantId,
-        basePoints.get(home.participantId)! + 3
+        basePoints.get(home.participantId)! + 3,
       )
-    } else if (awayScore > homeScore) {
+    } else if (match.walkoverWinnerId === away.participantId) {
       basePoints.set(
         away.participantId,
-        basePoints.get(away.participantId)! + 3
+        basePoints.get(away.participantId)! + 3,
       )
     } else {
-      basePoints.set(
-        home.participantId,
-        basePoints.get(home.participantId)! + 1
-      )
-      basePoints.set(
-        away.participantId,
-        basePoints.get(away.participantId)! + 1
-      )
+      const homeScore = home.score ?? 0
+      const awayScore = away.score ?? 0
+      if (homeScore > awayScore) {
+        basePoints.set(
+          home.participantId,
+          basePoints.get(home.participantId)! + 3,
+        )
+      } else if (awayScore > homeScore) {
+        basePoints.set(
+          away.participantId,
+          basePoints.get(away.participantId)! + 3,
+        )
+      } else {
+        basePoints.set(
+          home.participantId,
+          basePoints.get(home.participantId)! + 1,
+        )
+        basePoints.set(
+          away.participantId,
+          basePoints.get(away.participantId)! + 1,
+        )
+      }
     }
   }
 
@@ -384,6 +434,9 @@ function calculateGuarantees(
 function orderByCriteria(stats: RawStats[]): RawStats[] {
   return [...stats].sort((a, b) => {
     if (b.points !== a.points) return b.points - a.points
+    if (a.walkoverLosses !== b.walkoverLosses) {
+      return a.walkoverLosses - b.walkoverLosses
+    }
     if (b.wins !== a.wins) return b.wins - a.wins
 
     const aGoalDifference = a.goalsScored - a.goalsConceded
@@ -406,6 +459,7 @@ function isRawStatsTieCrossingBoundary(ordered: RawStats[]): boolean {
 
   return (
     fourth.points === fifth.points &&
+    fourth.walkoverLosses === fifth.walkoverLosses &&
     fourth.wins === fifth.wins &&
     fourth.goalsScored - fourth.goalsConceded ===
       fifth.goalsScored - fifth.goalsConceded &&
@@ -426,6 +480,7 @@ export function getTiedBoundaryParticipants(standings: StandingEntryDto[]): {
 
   if (
     fourth.points === fifth.points &&
+    fourth.walkoverLosses === fifth.walkoverLosses &&
     fourth.wins === fifth.wins &&
     fourth.goalDifference === fifth.goalDifference &&
     fourth.goalsScored === fifth.goalsScored
@@ -433,6 +488,7 @@ export function getTiedBoundaryParticipants(standings: StandingEntryDto[]): {
     const tied = standings.filter(
       (s) =>
         s.points === fourth.points &&
+        s.walkoverLosses === fourth.walkoverLosses &&
         s.wins === fourth.wins &&
         s.goalDifference === fourth.goalDifference &&
         s.goalsScored === fourth.goalsScored

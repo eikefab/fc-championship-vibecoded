@@ -88,10 +88,11 @@ export default async function HomePage() {
                 status={r.status}
                 homeParticipantName={r.homeName}
                 awayParticipantName={r.awayName}
-                homeParticipantId=""
-                awayParticipantId=""
+                homeParticipantId={r.homeParticipantId}
+                awayParticipantId={r.awayParticipantId}
                 homeScore={r.homeScore}
                 awayScore={r.awayScore}
+                walkoverWinnerId={r.walkoverWinnerId}
               />
             ))}
           </div>

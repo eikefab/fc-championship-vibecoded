@@ -54,6 +54,7 @@ model Participant {
   players Player[]
 
   matches              MatchParticipant[]
+  walkoverWins         Match[]
   groupMemberships     GroupParticipant[]
   tiebreakMemberships  GroupTiebreakParticipant[]
 }
@@ -132,12 +133,14 @@ model Match {
   round          Int?
   groupId        String?
   groupTiebreakId String?
+  walkoverWinnerId String?
   completedAt    DateTime?
   createdAt      DateTime            @default(now())
   updatedAt      DateTime            @updatedAt
 
   group        Group?         @relation(fields: [groupId], references: [id], onDelete: Cascade)
   groupTiebreak GroupTiebreak? @relation(fields: [groupTiebreakId], references: [id], onDelete: Cascade)
+  walkoverWinner Participant? @relation(fields: [walkoverWinnerId], references: [id], onDelete: Restrict)
 
   participants MatchParticipant[]
   events       MatchEvent[]
@@ -145,6 +148,7 @@ model Match {
   @@index([type, status])
   @@index([groupId, round])
   @@index([knockoutStage, status])
+  @@index([walkoverWinnerId])
 }
 
 model MatchParticipant {
